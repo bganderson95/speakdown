@@ -1,0 +1,905 @@
+/*
+ * Speakdown — "signal becomes document".
+ *
+ * The chrome is an instrument: monospace, hairlines, a live voice line. The
+ * output is a page: serif, generously set, the one raised surface on screen.
+ * The rendered/raw switch flips the document between those two voices, which is
+ * the whole product in one control.
+ *
+ * Boldness is spent in exactly two places — the typography and the page. Every
+ * other element is deliberately quiet.
+ */
+
+:root {
+  color-scheme: light dark;
+
+  /* --- Ink & signal: six chosen values, no pure black or white text --- */
+  --ink: #151c28; /* deep blue-black — primary text */
+  --paper: #f1f4f8; /* cool near-white — the page ground */
+  --vellum: #ffffff; /* the raised document surface */
+  --graphite: #59637a; /* secondary text */
+  --cobalt: #1b3fd1; /* the one accent: voice line, marks, links */
+  --flag: #b0304a; /* failure only, never decoration */
+
+  --rule: #d8dee8; /* hairlines */
+  --inset: #e7ecf3; /* recessed fields */
+  --cobalt-wash: #e6ebfb;
+  --flag-wash: #fbeaee;
+  --on-cobalt: #ffffff;
+
+  /* --- Type: two variable families, opposed roles --- */
+  --font-document: "Newsreader", Georgia, "Times New Roman", serif;
+  --font-instrument: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* Scale, ratio 1.25 */
+  --t-micro: 0.75rem; /* 12 */
+  --t-small: 0.8125rem; /* 13 */
+  --t-base: 0.9375rem; /* 15 */
+  --t-body: 1.0625rem; /* 17 — document body */
+  --t-lift: 1.3125rem; /* 21 */
+  --t-loud: 1.6875rem; /* 27 */
+  --t-shout: 2.125rem; /* 34 — wordmark */
+
+  /* --- Space: 4px base --- */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s6: 24px;
+  --s8: 32px;
+  --s12: 48px;
+  --s16: 64px;
+
+  /* --- Motion: short, ease-out, never bouncy --- */
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --fast: 130ms;
+  --calm: 200ms;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #e7ebf3;
+    --paper: #0e131c;
+    --vellum: #161d29;
+    --graphite: #8d97ab;
+    --cobalt: #8ba4ff;
+    --flag: #ff6f8d;
+
+    --rule: #262f41;
+    --inset: #111825;
+    --cobalt-wash: #1a2340;
+    --flag-wash: #2b1622;
+    --on-cobalt: #101728;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-instrument);
+  font-size: var(--t-base);
+  font-variant-ligatures: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* One visible focus treatment, applied everywhere. */
+:where(a, button, input, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--cobalt);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.app {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: var(--s12) var(--s6) var(--s16);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s8);
+}
+
+/* ------------------------------------------------------------------ */
+/* Masthead — the wordmark carries the concept in weight, not colour   */
+/* ------------------------------------------------------------------ */
+
+.masthead {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s4);
+  flex-wrap: wrap;
+}
+
+.wordmark {
+  margin: 0;
+  font-family: var(--font-document);
+  font-size: var(--t-shout);
+  line-height: 1;
+  letter-spacing: -0.022em;
+}
+
+/* Same word, two weights: the voice on the left, the type on the right. */
+.wordmark-speak {
+  font-weight: 300;
+}
+
+.wordmark-down {
+  font-weight: 700;
+}
+
+.tagline {
+  margin: 0;
+  font-family: var(--font-document);
+  font-size: var(--t-base);
+  font-style: italic;
+  color: var(--graphite);
+}
+
+/* ------------------------------------------------------------------ */
+/* Instrument bar — the voice line IS the recording indicator          */
+/* ------------------------------------------------------------------ */
+
+.instrument {
+  display: flex;
+  align-items: center;
+  gap: var(--s4);
+  flex-wrap: wrap;
+  padding-bottom: var(--s4);
+  border-bottom: 1px solid var(--rule);
+}
+
+/*
+ * The button and its meter are one object. A full-width rail read as a page
+ * divider and left the control hard to find.
+ */
+.transport {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+}
+
+.voice-well {
+  width: 168px;
+  flex: none;
+}
+
+.voice-line {
+  display: block;
+  width: 100%;
+  height: 34px;
+}
+
+.voice-line-tick {
+  stroke: var(--graphite);
+  stroke-width: 1;
+  opacity: 0.4;
+  vector-effect: non-scaling-stroke;
+}
+
+.voice-line-live .voice-line-tick {
+  stroke: var(--cobalt);
+  opacity: 0.7;
+}
+
+.voice-line-rest {
+  stroke: var(--graphite);
+  stroke-width: 1;
+  opacity: 0.28;
+  vector-effect: non-scaling-stroke;
+}
+
+.voice-line-trace {
+  fill: none;
+  stroke: var(--graphite);
+  stroke-width: 1.25;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  opacity: 0.55;
+  transition: stroke var(--calm) var(--ease), opacity var(--calm) var(--ease);
+}
+
+.voice-line-live .voice-line-trace {
+  stroke: var(--cobalt);
+  opacity: 1;
+}
+
+.speak-button {
+  padding: var(--s2) var(--s6);
+  border: 1px solid var(--ink);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--t-small);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background var(--fast) var(--ease), border-color var(--fast) var(--ease);
+}
+
+.speak-button:hover:not(:disabled) {
+  background: var(--cobalt);
+  border-color: var(--cobalt);
+  color: var(--on-cobalt);
+}
+
+.speak-button-live {
+  background: var(--cobalt);
+  border-color: var(--cobalt);
+  color: var(--on-cobalt);
+}
+
+.speak-button:disabled {
+  opacity: 0.5;
+  cursor: progress;
+}
+
+.instrument-status {
+  font-size: var(--t-micro);
+  color: var(--graphite);
+  font-variant-numeric: tabular-nums;
+}
+
+.scopes {
+  display: flex;
+  gap: var(--s2);
+  flex-wrap: wrap;
+  font-size: var(--t-micro);
+  color: var(--graphite);
+}
+
+.scopes-none {
+  color: var(--graphite);
+  opacity: 0.55;
+}
+
+/* Open marks announce themselves by weight and colour, not by a chip border. */
+.scope {
+  color: var(--cobalt);
+  font-weight: 600;
+  animation: scope-in var(--fast) var(--ease) both;
+}
+
+@keyframes scope-in {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+}
+
+.instrument-error {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: var(--t-micro);
+  color: var(--flag);
+  max-width: 60ch;
+}
+
+/* ------------------------------------------------------------------ */
+/* Workspace — signal (narrow, mono) left of document (wide, serif)    */
+/* ------------------------------------------------------------------ */
+
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 4fr) minmax(0, 6fr);
+  gap: var(--s6);
+  /* Stretch, not start: a short signal beside a long page left a dead void. */
+  align-items: stretch;
+}
+
+.transcript-panel,
+.document {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* Hiding the transcript only widens the document; it never moves down a row. */
+.workspace-solo {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/*
+ * Alone, the page uses the whole width — paper and text together. Capping only
+ * the paper would move the void inside it, so the measure cap lifts too.
+ */
+.workspace-solo .page-body {
+  max-width: none;
+}
+
+/* Both column heads are the same height, so the two labels share a baseline
+   even though only one of them carries a control. */
+.panel-label {
+  display: flex;
+  align-items: center;
+  min-height: 30px;
+  margin: 0 0 var(--s2);
+  font-size: var(--t-micro);
+  font-weight: 500;
+  color: var(--graphite);
+}
+
+/* The signal is recessed and flat — it is input, not output. */
+.transcript {
+  display: block;
+  width: 100%;
+  flex: 1;
+  min-height: 320px;
+  padding: var(--s4);
+  border: 0;
+  border-left: 2px solid var(--rule);
+  border-radius: 0;
+  background: var(--inset);
+  color: var(--graphite);
+  font-family: var(--font-instrument);
+  font-size: var(--t-small);
+  font-weight: 400;
+  line-height: 1.85;
+  resize: vertical;
+  transition: border-color var(--calm) var(--ease), color var(--calm) var(--ease);
+}
+
+.transcript:focus {
+  color: var(--ink);
+  border-left-color: var(--cobalt);
+}
+
+.transcript-live {
+  border-left-color: var(--cobalt);
+  color: var(--ink);
+}
+
+.document-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s4);
+  min-height: 30px;
+  margin-bottom: var(--s2);
+}
+
+.document-head .panel-label {
+  margin: 0;
+}
+
+/* The one raised surface on screen. This is where the boldness is spent. */
+.page {
+  flex: 1;
+  min-height: 320px;
+  padding: var(--s8) var(--s8) var(--s12);
+  background: var(--vellum);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  box-shadow: 0 1px 2px rgb(21 28 40 / 4%), 0 12px 32px -20px rgb(21 28 40 / 24%);
+  overflow-x: auto;
+}
+
+@media (prefers-color-scheme: dark) {
+  .page {
+    box-shadow: none;
+  }
+}
+
+/* The measure cap only bites in the two-column layout; solo lifts it above. */
+.page-body {
+  max-width: 68ch;
+  animation: page-in var(--calm) var(--ease) both;
+}
+
+/* Crossfading rendered and raw says: same content, different form. */
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* The document itself — serif, the editorial voice                    */
+/* ------------------------------------------------------------------ */
+
+.page-rendered {
+  font-family: var(--font-document);
+  font-size: var(--t-body);
+  font-weight: 380;
+  line-height: 1.68;
+  font-optical-sizing: auto;
+}
+
+.page-rendered > :first-child {
+  margin-top: 0;
+}
+
+.page-rendered > :last-child {
+  margin-bottom: 0;
+}
+
+.page-rendered p {
+  margin: 0 0 var(--s4);
+}
+
+.page-rendered h1,
+.page-rendered h2,
+.page-rendered h3,
+.page-rendered h4,
+.page-rendered h5,
+.page-rendered h6 {
+  margin: var(--s8) 0 var(--s3);
+  font-weight: 620;
+  line-height: 1.2;
+  letter-spacing: -0.018em;
+}
+
+.page-rendered h1 {
+  font-size: var(--t-loud);
+}
+.page-rendered h2 {
+  font-size: var(--t-lift);
+}
+.page-rendered h3 {
+  font-size: var(--t-body);
+}
+.page-rendered h4,
+.page-rendered h5,
+.page-rendered h6 {
+  font-size: var(--t-base);
+  font-weight: 680;
+}
+
+.page-rendered strong {
+  font-weight: 700;
+}
+
+.page-rendered em {
+  font-style: italic;
+}
+
+.page-rendered del {
+  color: var(--graphite);
+  text-decoration-thickness: 1px;
+}
+
+.page-rendered blockquote {
+  margin: 0 0 var(--s4);
+  padding-left: var(--s4);
+  border-left: 2px solid var(--cobalt);
+  font-style: italic;
+  color: var(--graphite);
+}
+
+.page-rendered blockquote p {
+  margin: 0;
+}
+
+.page-rendered ul,
+.page-rendered ol {
+  margin: 0 0 var(--s4);
+  padding-left: var(--s6);
+}
+
+.page-rendered li {
+  margin-bottom: var(--s1);
+}
+
+.page-rendered a {
+  color: var(--ink);
+  text-decoration-color: var(--cobalt);
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1.5px;
+  transition: color var(--fast) var(--ease);
+}
+
+.page-rendered a:hover {
+  color: var(--cobalt);
+}
+
+/* Code keeps the instrument's voice even inside the document. */
+.page-rendered code {
+  font-family: var(--font-instrument);
+  font-size: 0.84em;
+  padding: 1px 5px;
+  border-radius: 2px;
+  background: var(--inset);
+}
+
+.page-rendered pre {
+  margin: 0 0 var(--s4);
+  padding: var(--s4);
+  border-left: 2px solid var(--rule);
+  background: var(--inset);
+  overflow-x: auto;
+}
+
+.page-rendered pre code {
+  padding: 0;
+  background: transparent;
+  font-size: var(--t-small);
+  line-height: 1.7;
+}
+
+.page-rendered hr {
+  margin: var(--s8) 0;
+  border: 0;
+  border-top: 1px solid var(--rule);
+}
+
+.page-rendered .task-list {
+  padding-left: 0;
+  list-style: none;
+}
+
+.page-rendered .task-item {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s2);
+}
+
+.page-rendered .task-item input {
+  margin: 0;
+  accent-color: var(--cobalt);
+}
+
+/* Raw view: the same document in the instrument's voice. */
+.page-raw {
+  margin: 0;
+  font-family: var(--font-instrument);
+  font-size: var(--t-small);
+  font-weight: 400;
+  line-height: 1.85;
+  color: var(--ink);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ------------------------------------------------------------------ */
+/* The resolution moment — the instant a command becomes formatting    */
+/* ------------------------------------------------------------------ */
+
+.page-rendered .just-resolved {
+  animation: resolve 160ms var(--ease);
+}
+
+/*
+ * Deliberately not a flourish: the element settles into place and its colour
+ * arrives a beat late, so it reads as "resolved" rather than "decorated".
+ */
+@keyframes resolve {
+  from {
+    opacity: 0.45;
+    transform: translateY(1.5px);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* View switch — one control, a sliding thumb between two words        */
+/* ------------------------------------------------------------------ */
+
+.switch {
+  position: relative;
+  display: inline-flex;
+  padding: 2px;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  background: var(--paper);
+}
+
+.switch-thumb {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: 2px;
+  width: calc(50% - 2px);
+  background: var(--ink);
+  transition: transform var(--calm) var(--ease);
+}
+
+.switch-thumb-raw {
+  transform: translateX(100%);
+}
+
+.switch-option {
+  position: relative;
+  padding: var(--s1) var(--s3);
+  min-width: 72px;
+  border: 0;
+  background: transparent;
+  color: var(--graphite);
+  font: inherit;
+  font-size: var(--t-micro);
+  cursor: pointer;
+  transition: color var(--fast) var(--ease);
+}
+
+.switch-option[aria-pressed="true"] {
+  color: var(--paper);
+  font-weight: 600;
+}
+
+/* ------------------------------------------------------------------ */
+/* Empty state — an invitation, with three moves to try                */
+/* ------------------------------------------------------------------ */
+
+.empty {
+  max-width: 52ch;
+}
+
+.empty-lead {
+  margin: 0 0 var(--s3);
+  font-family: var(--font-document);
+  font-size: var(--t-lift);
+  font-weight: 380;
+  font-style: italic;
+  line-height: 1.35;
+  color: var(--ink);
+}
+
+.empty-body {
+  margin: 0 0 var(--s6);
+  font-family: var(--font-document);
+  font-size: var(--t-base);
+  line-height: 1.6;
+  color: var(--graphite);
+}
+
+.empty-moves {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--s2);
+  font-size: var(--t-small);
+  color: var(--graphite);
+}
+
+.empty-moves li {
+  padding-left: var(--s4);
+  border-left: 2px solid var(--rule);
+  overflow-wrap: anywhere;
+}
+
+/* ------------------------------------------------------------------ */
+/* Notices — says what happened, keeps the words, no apology           */
+/* ------------------------------------------------------------------ */
+
+.notices {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s4);
+  flex-wrap: wrap;
+  padding: var(--s3) var(--s4);
+  border-left: 2px solid var(--flag);
+  background: var(--flag-wash);
+  font-size: var(--t-small);
+}
+
+.notice {
+  margin: 0;
+  color: var(--ink);
+}
+
+.notice-action {
+  padding: var(--s1) var(--s3);
+  border: 1px solid var(--flag);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--flag);
+  font: inherit;
+  font-size: var(--t-micro);
+  cursor: pointer;
+}
+
+/* ------------------------------------------------------------------ */
+/* Settings row                                                        */
+/* ------------------------------------------------------------------ */
+
+.chrome-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s4);
+  flex-wrap: wrap;
+  margin-top: calc(var(--s8) * -1 + var(--s2));
+  font-size: var(--t-micro);
+}
+
+.settings {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s6);
+  flex-wrap: wrap;
+}
+
+.toggle,
+.field {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--s2);
+  color: var(--graphite);
+  cursor: pointer;
+}
+
+.toggle input {
+  accent-color: var(--cobalt);
+  cursor: pointer;
+}
+
+.field-label {
+  color: var(--graphite);
+}
+
+.field-input {
+  width: 108px;
+  padding: 2px var(--s2);
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--t-micro);
+  transition: border-color var(--fast) var(--ease);
+}
+
+.field-input:focus {
+  border-bottom-color: var(--cobalt);
+}
+
+.field-input-bad {
+  border-bottom-color: var(--flag);
+}
+
+.field-error {
+  color: var(--flag);
+}
+
+.ghost-button {
+  padding: var(--s1) var(--s3);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--graphite);
+  font: inherit;
+  font-size: var(--t-micro);
+  cursor: pointer;
+  transition: border-color var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+
+.ghost-button:hover:not(:disabled) {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.ghost-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* ------------------------------------------------------------------ */
+/* Vocabulary — a reference, set to be read                            */
+/* ------------------------------------------------------------------ */
+
+.help {
+  padding-top: var(--s6);
+  border-top: 1px solid var(--rule);
+}
+
+.help-title {
+  margin: 0 0 var(--s2);
+  font-family: var(--font-document);
+  font-size: var(--t-lift);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+.help-intro {
+  margin: 0 0 var(--s8);
+  max-width: 62ch;
+  font-family: var(--font-document);
+  font-size: var(--t-base);
+  line-height: 1.6;
+  color: var(--graphite);
+}
+
+.help-group {
+  margin-bottom: var(--s8);
+}
+
+.help-group-title {
+  margin: 0 0 var(--s3);
+  padding-bottom: var(--s2);
+  border-bottom: 1px solid var(--rule);
+  font-size: var(--t-micro);
+  font-weight: 600;
+  color: var(--graphite);
+}
+
+.help-list {
+  margin: 0;
+  display: grid;
+  gap: var(--s2);
+}
+
+.help-row {
+  display: grid;
+  grid-template-columns: minmax(0, 22ch) minmax(0, 1fr);
+  gap: var(--s6);
+  align-items: baseline;
+}
+
+.help-row dt {
+  margin: 0;
+  font-size: var(--t-small);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.help-row dd {
+  margin: 0;
+  font-family: var(--font-document);
+  font-size: var(--t-base);
+  line-height: 1.5;
+  color: var(--graphite);
+}
+
+code {
+  font-family: var(--font-instrument);
+}
+
+.help-intro code {
+  font-size: 0.9em;
+  padding: 1px 4px;
+  background: var(--inset);
+  border-radius: 2px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Responsive                                                          */
+/* ------------------------------------------------------------------ */
+
+@media (max-width: 900px) {
+  .workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .transcript {
+    min-height: 200px;
+  }
+}
+
+@media (max-width: 620px) {
+  .app {
+    padding: var(--s8) var(--s4) var(--s12);
+    gap: var(--s6);
+  }
+
+  .wordmark {
+    font-size: var(--t-loud);
+  }
+
+  .page {
+    padding: var(--s6) var(--s4) var(--s8);
+  }
+
+  .help-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s1);
+  }
+
+}
+
+/* ------------------------------------------------------------------ */
+/* Reduced motion — every animation above has an off switch            */
+/* ------------------------------------------------------------------ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
