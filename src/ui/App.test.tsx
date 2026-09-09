@@ -92,9 +92,9 @@ describe("App", () => {
     expect(markup).toContain('aria-pressed="true"');
   });
 
-  it("hides the transcript by default", () => {
-    expect(markup).toContain("workspace-solo");
-    expect(markup).not.toContain('id="transcript-input"');
+  it("shows the transcript when no key is saved, since typing is all a visitor can do", () => {
+    expect(markup).not.toContain("workspace-solo");
+    expect(markup).toContain('id="transcript-input"');
   });
 
   it("puts the transcript control above the panels, never below what it hides", () => {

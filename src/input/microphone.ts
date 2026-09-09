@@ -94,7 +94,7 @@ export class MicrophoneError extends Error {
 }
 
 /** True when the browser can capture audio at all (needs HTTPS or localhost). */
-export function isMicrophoneAvailable(): boolean {
+function isMicrophoneAvailable(): boolean {
   return (
     typeof navigator !== "undefined" &&
     navigator.mediaDevices !== undefined &&

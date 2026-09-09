@@ -214,7 +214,7 @@ export const CODE_BLOCK_CLOSERS: readonly string[][] = [["end", "code", "block"]
  * hello", is "print" a language or the first word of the code? Only a word on
  * this list is treated as a language tag; anything else starts the code.
  */
-export const CODE_BLOCK_LANGUAGES: readonly string[] = [
+const CODE_BLOCK_LANGUAGES: readonly string[] = [
   "bash",
   "c",
   "cpp",

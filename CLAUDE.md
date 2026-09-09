@@ -61,12 +61,20 @@ features. This file is the shorter, permanent set of principles.
 
 ## 4. Architecture: pure core, thin shell
 
+The parser is split by phase — `tokenize` -> `matchCommand` -> `readActions` ->
+`applyActions` — with `parse.ts` as a thin entry point that documents the
+grammar. Keep new parsing work in the phase it belongs to rather than growing
+one file back into a monolith.
+
 Import boundaries (must always hold):
 
 - `model/` imports nothing from `parser/`, `input/`, or `ui/`.
 - `parser/` may import from `model/` only.
 - `input/` may import from `parser/` and `model/`.
 - `ui/` may import from anything.
+- **No import cycles between modules.** Two files importing runtime values from
+  each other can leave one half-initialized. Type-only imports are erased and
+  are fine. A test walks the graph and fails on any loop.
 
 Consequences to preserve:
 

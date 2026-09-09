@@ -57,6 +57,28 @@ function importsOf(path: string): string[] {
 }
 
 /**
+ * Only the imports that survive to runtime.
+ *
+ * `import type { … } from "x"` is erased at build time, so it cannot take part
+ * in a runtime cycle. The check has to be per statement: a file may import
+ * types from a module on one line and values from it on another.
+ */
+function valueImportsOf(path: string): string[] {
+  const source = readFileSync(path, "utf8");
+  const specifiers: string[] = [];
+  const pattern = /(?:^|\n)\s*import\s+(type\s+)?[^;\n]*?from\s+["']([^"']+)["']/g;
+
+  let match = pattern.exec(source);
+  while (match !== null) {
+    if (match[1] === undefined && match[2] !== undefined) {
+      specifiers.push(match[2]);
+    }
+    match = pattern.exec(source);
+  }
+  return specifiers;
+}
+
+/**
  * Which top-level src/ directory an import resolves into: "model", "parser",
  * "input", "ui", or "external" for a bare package specifier.
  */
@@ -137,6 +159,58 @@ describe("import boundaries", () => {
       expect(code, `${file} calls Date.now()`).not.toMatch(/\bDate\s*\.\s*now\s*\(/);
       expect(code, `${file} uses randomness`).not.toMatch(/\bMath\s*\.\s*random\s*\(/);
     }
+  });
+
+  it("no module imports another that imports it back", () => {
+    /*
+     * Type-only imports are erased, so they cannot cycle at runtime; a cycle
+     * of real values can leave a module half-initialized, which is the kind of
+     * bug that only shows up in production. Walk the value-import graph and
+     * fail on any loop.
+     */
+    const graph = new Map<string, string[]>();
+    for (const directory of ["model", "parser", "input", "ui"]) {
+      for (const file of sourceFilesIn(directory)) {
+        const targets: string[] = [];
+        for (const specifier of valueImportsOf(file)) {
+          if (!specifier.startsWith(".")) {
+            continue;
+          }
+          targets.push(resolve(dirname(file), specifier).replace(/\.js$/, ""));
+        }
+        graph.set(file.replace(/\.tsx?$/, ""), targets);
+      }
+    }
+
+    const visiting = new Set<string>();
+    const done = new Set<string>();
+    const trail: string[] = [];
+
+    function walk(node: string): void {
+      if (done.has(node)) {
+        return;
+      }
+      if (visiting.has(node)) {
+        const loop = [...trail.slice(trail.indexOf(node)), node]
+          .map((p) => relative(SRC, p))
+          .join(" -> ");
+        throw new Error(`Import cycle: ${loop}`);
+      }
+      visiting.add(node);
+      trail.push(node);
+      for (const next of graph.get(node) ?? []) {
+        walk(next);
+      }
+      trail.pop();
+      visiting.delete(node);
+      done.add(node);
+    }
+
+    expect(() => {
+      for (const node of graph.keys()) {
+        walk(node);
+      }
+    }).not.toThrow();
   });
 
   it("the transforms are actually covered by these checks", () => {

@@ -2,14 +2,23 @@
 
 *speech to rich text.*
 
+Say **"heading two this week end heading the plan is bold short end bold"** and
+watch it set itself.
+
+![Speakdown: spoken commands on the left, the formatted document on the right](docs/screenshot.png)
+
 Speakdown turns spoken commands into styled rich text. You speak; a transcript
 arrives; a deterministic parser recognizes explicit formatting commands inside
 it and produces a document model. That one model renders two ways — styled HTML
 and markdown source — toggled like GitHub's edit/preview switch.
 
-The verbal command system is complete, and it runs on **live speech** through
-AssemblyAI Universal-Streaming. Prosody (loud = bold) is still to come; see
-"Seams for prosody" below.
+It handles marks, headings, three kinds of list, quotes, code blocks, links and
+emoji, plus deterministic transformations: spoken arithmetic collapses to its
+answer, a spoken date resolves to an ISO date, and an address becomes a maps
+link. It runs on **live speech** through AssemblyAI Universal-Streaming, and it
+is bring-your-own-key — see [Deploying](#deploying).
+
+Prosody (loud = bold) is still to come; see "Seams for prosody" below.
 
 ## Run it
 
@@ -30,13 +39,22 @@ transcript into the box instead. Get a key at
 ```
 src/
   model/     pure: the document model + both renderers
-  parser/    pure: tokenizer, command vocabulary, the parse state machine
-    transforms/  pure: math, date and maps-link computation
+  parser/    pure, and split by the phase it belongs to:
+               tokenize -> matchCommand -> readActions -> applyActions
+               commands.ts   the vocabulary, as data
+               scopes.ts     what is open, and what opening or closing one does
+               transforms/   math, date and maps-link computation
   input/     the impure boundary: transcript sources, audio, clipboard
+               assemblyaiProtocol.ts  pure: reading the streaming wire format
+               assemblyaiBrowser.ts   every impure thing a session touches
   ui/        React
-vite-plugins/
-  assemblyaiToken.ts   dev-server endpoint that mints streaming tokens
+server/      mintToken.ts   shared by the dev server and the deployed function
+api/         the deployed token endpoint (no key of its own)
+vite-plugins/  the dev-only token endpoint
 ```
+
+`parse.ts` is the entry point and the place the whole grammar is documented; it
+is deliberately thin, because each phase lives in its own file.
 
 Import rules, enforced by `src/importBoundaries.test.ts`:
 
@@ -44,6 +62,9 @@ Import rules, enforced by `src/importBoundaries.test.ts`:
 - `parser/` may import from `model/` only
 - `input/` may import from `parser/` and `model/`
 - `ui/` may import from anything
+- no module imports another that imports it back — a cycle of runtime values
+  can leave a module half-initialized, so the test walks the import graph and
+  fails on any loop (type-only imports are erased, so they do not count)
 
 `model/` and `parser/` contain no React, no DOM, no audio, no network — the test
 checks both the import specifiers and the source text for browser globals. That

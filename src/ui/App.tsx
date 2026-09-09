@@ -6,8 +6,7 @@
  * disagree.
  */
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { hasClipboardLinks, readClipboardText, resolveClipboardLinks } from "../input/resolveClipboardLinks.js";
+import { useMemo, useRef, useState } from "react";
 import { renderHtml } from "../model/renderHtml.js";
 import { renderMarkdown } from "../model/renderMarkdown.js";
 import type { ParserConfig } from "../parser/commands.js";
@@ -19,6 +18,7 @@ import { Editor } from "./Editor.js";
 import { Recorder } from "./Recorder.js";
 import { Settings } from "./Settings.js";
 import { useApiKey } from "./useApiKey.js";
+import { useClipboardLinks } from "./useClipboardLinks.js";
 import { useVoiceActivity } from "./useVoiceActivity.js";
 import { useLiveTranscription } from "./useLiveTranscription.js";
 
@@ -57,19 +57,20 @@ function joinTranscript(base: string, live: string): string {
 export function App() {
   const [transcript, setTranscript] = useState(SAMPLE_TRANSCRIPT);
   const [config, setConfig] = useState<ParserConfig>(DEFAULT_CONFIG);
-  const { apiKey, setApiKey } = useApiKey();
+  const { apiKey, setApiKey, hasApiKey } = useApiKey();
   const [escapeInput, setEscapeInput] = useState(DEFAULT_CONFIG.escapeWord);
   const [escapeError, setEscapeError] = useState<string | null>(null);
   const [view, setView] = useState<OutputView>("rendered");
-  // Hidden by default: the document is the point, and the transcript is the
-  // raw material behind it.
-  const [transcriptOpen, setTranscriptOpen] = useState(false);
-
-  // Clipboard state lives here, not in the parser: reading it needs a browser
-  // API and a user gesture. `clipboardTried` stops us from re-prompting on
-  // every keystroke once a read has already been attempted.
-  const [clipboardUrl, setClipboardUrl] = useState<string | null>(null);
-  const [clipboardTried, setClipboardTried] = useState(false);
+  /*
+   * Hidden by default: the document is the point, and the transcript is the raw
+   * material behind it. The exception is a visitor with no key saved, who
+   * cannot record at all — typing into the transcript is the only way they can
+   * try anything, so it starts open for them.
+   *
+   * Decided once, at mount: saving a key mid-session should not make the panel
+   * disappear underneath someone.
+   */
+  const [transcriptOpen, setTranscriptOpen] = useState(() => !hasApiKey);
 
   // What was in the box when recording started. Live turns are appended to it.
   const baseTranscriptRef = useRef("");
@@ -83,39 +84,18 @@ export function App() {
     () => (apiKeyRef.current.length > 0 ? apiKeyRef.current : null),
   );
 
+  // "Someone is talking right now", which is a stricter thing than "the
+  // microphone is open", and is what the typing indicator reports.
+  const speaking = useVoiceActivity(live.amplitude, live.status === "listening");
+
   // The clock is injected rather than read inside the parser, which is what
   // keeps the date transformation pure and testable. Reading it here means
   // "date today" resolves against the moment the transcript last changed.
-  // "Someone is talking right now", which is a stricter thing than "the
-  // microphone is open" and is what the typing indicator reports.
-  const speaking = useVoiceActivity(live.amplitude, live.status === "listening");
-
   const parseResult = useMemo(() => parse(transcript, config, new Date()), [transcript, config]);
-  const needsClipboard = hasClipboardLinks(parseResult.document);
 
-  useEffect(() => {
-    if (!needsClipboard || clipboardTried) {
-      return;
-    }
-    let cancelled = false;
-    void readClipboardText().then((text) => {
-      if (!cancelled) {
-        setClipboardUrl(text);
-        setClipboardTried(true);
-      }
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [needsClipboard, clipboardTried]);
-
-  const resolution = useMemo(
-    () => resolveClipboardLinks(parseResult.document, clipboardUrl),
-    [parseResult, clipboardUrl],
-  );
-
-  const html = useMemo(() => renderHtml(resolution.document), [resolution]);
-  const markdown = useMemo(() => renderMarkdown(resolution.document), [resolution]);
+  const clipboard = useClipboardLinks(parseResult.document);
+  const html = useMemo(() => renderHtml(clipboard.document), [clipboard.document]);
+  const markdown = useMemo(() => renderMarkdown(clipboard.document), [clipboard.document]);
 
   function handleEscapeInputChange(value: string): void {
     setEscapeInput(value);
@@ -153,20 +133,10 @@ export function App() {
     setTranscript("");
   }
 
-  /** Retrying inside a click gives the browser the user gesture it wants. */
-  async function handleClipboardRetry(): Promise<void> {
-    const text = await readClipboardText();
-    setClipboardUrl(text);
-    setClipboardTried(true);
-  }
-
-  const notices: string[] = [];
-  for (const notice of parseResult.notices) {
-    notices.push(notice.message);
-  }
-  for (const notice of resolution.notices) {
-    notices.push(notice.message);
-  }
+  const notices = [
+    ...parseResult.notices.map((notice) => notice.message),
+    ...clipboard.notices,
+  ];
 
   return (
     <div className="app">
@@ -220,15 +190,15 @@ export function App() {
         speaking={speaking}
       />
 
-      {(notices.length > 0 || needsClipboard) && (
+      {(notices.length > 0 || clipboard.awaitingClipboard) && (
         <div className="notices" role="status">
           {notices.map((message) => (
             <p key={message} className="notice">
               {message}
             </p>
           ))}
-          {needsClipboard && clipboardUrl === null && (
-            <button type="button" className="notice-action" onClick={() => void handleClipboardRetry()}>
+          {clipboard.awaitingClipboard && (
+            <button type="button" className="notice-action" onClick={() => void clipboard.retry()}>
               read clipboard
             </button>
           )}

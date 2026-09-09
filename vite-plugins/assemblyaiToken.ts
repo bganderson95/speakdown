@@ -15,7 +15,7 @@
 import type { Connect, Plugin } from "vite";
 import { API_KEY_HEADER, MISSING_KEY_MESSAGE, mintToken } from "../server/mintToken.js";
 
-export const TOKEN_ROUTE = "/api/assemblyai-token";
+const TOKEN_ROUTE = "/api/assemblyai-token";
 
 interface TokenPluginOptions {
   /** Server-side key from the environment. Dev convenience only. */

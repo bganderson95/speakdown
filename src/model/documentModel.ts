@@ -36,7 +36,7 @@ export const WRAPPING_MARK_ORDER: readonly WrappingMark[] = [
  * the raw view is genuinely uppercased characters. Both renderers do exactly
  * that, which is what keeps the two views identical.
  */
-export const MARK_ORDER: readonly Mark[] = [
+const MARK_ORDER: readonly Mark[] = [
   "bold",
   "italic",
   "strikethrough",
@@ -111,11 +111,6 @@ export type Block =
 
 export interface DocumentModel {
   blocks: Block[];
-}
-
-/** An empty document. */
-export function emptyDocument(): DocumentModel {
-  return { blocks: [] };
 }
 
 // ---------------------------------------------------------------------------
