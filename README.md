@@ -272,13 +272,45 @@ docs rather than written from memory):
   ignored, so a new server message cannot break a live session
 - `{"type":"Terminate"}` to finish, then wait briefly for the last `Turn`
 
-**The API key never reaches the browser.** `vite-plugins/assemblyaiToken.ts`
-adds `GET /api/assemblyai-token` to the dev and preview servers; it reads
-`ASSEMBLYAI_API_KEY` from the server environment and returns a token that
-expires in 60 seconds. The variable has no `VITE_` prefix and is never passed to
-`define`, so it cannot be inlined into the bundle. Deploying for real means
-reimplementing that one endpoint on your backend with the same contract:
-`200 {token}`, or a non-200 with `{error}`.
+## Deploying
+
+Speakdown is **bring your own key**. A deployed copy has no AssemblyAI key of
+its own: each visitor pastes their own into the app, and it is spent only on
+their own transcription. There is no sign-in and no account — it is a demo, and
+a key is the whole of the auth.
+
+**Why a server function exists at all.** AssemblyAI's token endpoint sends no
+`Access-Control-Allow-Origin` header and answers `OPTIONS` with 405, so a
+browser cannot call it directly even holding a valid key. One server-side hop is
+unavoidable. `api/assemblyai-token.ts` is that hop and nothing more: it reads
+the caller's key from the `x-assemblyai-key` header, exchanges it for a
+60-second streaming token, and returns the token. The key is never stored, never
+logged, and never written to a response.
+
+**There is no environment fallback in the deployed function.** It is not that
+the key is optional there — a request without one is refused with 401. That is
+what stops a public deployment from quietly spending the maintainer's quota.
+
+```
+vercel deploy        # api/ is an Edge Function; nothing else to configure
+```
+
+The handler is a plain `(Request) => Response`, so other hosts need only a thin
+adapter around `server/mintToken.ts`, which holds the actual logic. Set no
+environment variables: the deployment is meant to have no key.
+
+**Locally it is more forgiving.** `vite dev` falls back to `ASSEMBLYAI_API_KEY`
+from `.env.local` when the browser sends no key, so working on the app does not
+mean retyping one on every reload. That fallback exists in `vite dev` and
+nowhere else — `vite preview` deliberately does not register the route, so a
+local preview behaves exactly like a real deployment. Every `.env*` file is
+gitignored and the variable has no `VITE_` prefix, so it is never inlined into
+the bundle.
+
+**Where the visitor's key is kept.** In their browser's `localStorage`, under
+`speakdown.assemblyai-key`, and nowhere else. That is readable by any script on
+the origin, which is the accepted shape for a BYO-key tool — the alternative is
+retyping it every reload — and the field says so and offers a way to forget it.
 
 **No resampling.** AssemblyAI accepts 8000–96000 Hz, so the client asks for a
 16 kHz `AudioContext` and then reports whatever rate the browser actually gave

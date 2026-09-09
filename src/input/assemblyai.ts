@@ -25,6 +25,15 @@ import type { TranscriptSource } from "./textInput.js";
 import type { TurnEvent, TurnWord } from "./transcriptBuffer.js";
 import { DEFAULT_PAUSE_PARAGRAPH_MS, createTranscriptBuffer } from "./transcriptBuffer.js";
 
+/**
+ * The header the browser uses to present its own AssemblyAI key.
+ *
+ * Declared here rather than imported from server/, which would breach the
+ * import boundary in CLAUDE.md §4. A test asserts this matches the server's
+ * copy, so the two cannot drift.
+ */
+export const API_KEY_HEADER = "x-assemblyai-key";
+
 export const STREAMING_URL = "wss://streaming.assemblyai.com/v3/ws";
 export const DEFAULT_TOKEN_ENDPOINT = "/api/assemblyai-token";
 
@@ -72,7 +81,7 @@ export interface StreamingSocket {
 }
 
 export interface StreamingDependencies {
-  fetchToken: (endpoint: string) => Promise<string>;
+  fetchToken: (endpoint: string, apiKey: string | null) => Promise<string>;
   openSocket: (url: string) => StreamingSocket;
   openMicrophone: (options: MicrophoneOptions) => Promise<Microphone>;
 }
@@ -97,6 +106,12 @@ export interface StreamingOptions {
    * Defaults to DEFAULT_START_SILENCE_STOP_MS.
    */
   startSilenceStopMs?: number;
+  /**
+   * The user's own AssemblyAI key, read fresh at the start of every session.
+   * Null means "let the backend decide", which only succeeds in local
+   * development, where the dev server falls back to .env.local.
+   */
+  getApiKey?: () => string | null;
   /** Overrides for tests. */
   dependencies?: Partial<StreamingDependencies>;
 }
@@ -127,23 +142,53 @@ export interface StreamingSource extends TranscriptSource {
 /**
  * Asks our own backend for a temporary streaming token.
  *
- * The backend holds the API key; see §10 of the spec — a key must never be
- * hardcoded into client code.
+ * The user's key is sent per-request and never stored server-side. It has to
+ * make this one hop because AssemblyAI's token endpoint sends no CORS headers,
+ * so the browser cannot call it directly.
  */
-async function fetchTokenFromBackend(endpoint: string): Promise<string> {
+async function fetchTokenFromBackend(endpoint: string, apiKey: string | null): Promise<string> {
+  const headers: Record<string, string> = {};
+  if (apiKey !== null && apiKey.trim().length > 0) {
+    headers[API_KEY_HEADER] = apiKey.trim();
+  }
+
   let response: Response;
   try {
-    response = await fetch(endpoint);
+    response = await fetch(endpoint, { headers });
   } catch {
     throw new Error(`Could not reach the token endpoint at ${endpoint}.`);
   }
 
   if (!response.ok) {
-    const body = (await response.text()).slice(0, 300);
-    throw new Error(`Token endpoint returned ${response.status}. ${body}`.trim());
+    // The endpoint puts a readable reason in { error }; show that rather than
+    // a status code the user can do nothing with.
+    const raw = (await response.text()).slice(0, 400);
+    let message = raw;
+    try {
+      const parsed: unknown = JSON.parse(raw);
+      const reason = (parsed as { error?: unknown }).error;
+      if (typeof reason === "string") {
+        message = reason;
+      }
+    } catch {
+      // Not JSON; the raw body is the best we have.
+    }
+    throw new Error(message);
   }
 
-  const payload: unknown = await response.json();
+  // A static host with no function deployed answers this route with the app's
+  // own index.html, so a 200 is not proof of an endpoint. Say what is actually
+  // wrong rather than letting a JSON parse error surface.
+  const raw = await response.text();
+  let payload: unknown;
+  try {
+    payload = JSON.parse(raw);
+  } catch {
+    throw new Error(
+      `No token endpoint is deployed at ${endpoint}. Deploy the function in api/ alongside the site.`,
+    );
+  }
+
   if (
     typeof payload !== "object" ||
     payload === null ||
@@ -262,6 +307,7 @@ export function isTerminationMessage(raw: string): boolean {
 
 export function createAssemblyAISource(options: StreamingOptions = {}): StreamingSource {
   const tokenEndpoint = options.tokenEndpoint ?? DEFAULT_TOKEN_ENDPOINT;
+  const getApiKey = options.getApiKey ?? (() => null);
   const formatTurns = options.formatTurns ?? true;
   const pauseParagraphMs = options.pauseParagraphMs ?? DEFAULT_PAUSE_PARAGRAPH_MS;
   const silenceStopMs = options.silenceStopMs ?? DEFAULT_SILENCE_STOP_MS;
@@ -444,7 +490,7 @@ export function createAssemblyAISource(options: StreamingOptions = {}): Streamin
 
     let token: string;
     try {
-      token = await dependencies.fetchToken(tokenEndpoint);
+      token = await dependencies.fetchToken(tokenEndpoint, getApiKey());
     } catch (tokenError) {
       await fail(tokenError instanceof Error ? tokenError.message : String(tokenError));
       return;

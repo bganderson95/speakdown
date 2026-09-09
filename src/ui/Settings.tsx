@@ -5,7 +5,11 @@
  * Kept out of the instrument bar so that bar stays about the voice.
  */
 
+import { ApiKeyField } from "./ApiKeyField.js";
+
 interface SettingsProps {
+  apiKey: string;
+  onApiKeyChange: (value: string) => void;
   escapeInput: string;
   escapeError: string | null;
   onEscapeInputChange: (value: string) => void;
@@ -14,6 +18,8 @@ interface SettingsProps {
 }
 
 export function Settings({
+  apiKey,
+  onApiKeyChange,
   escapeInput,
   escapeError,
   onEscapeInputChange,
@@ -34,6 +40,8 @@ export function Settings({
         />
         show transcript
       </label>
+
+      <ApiKeyField apiKey={apiKey} onApiKeyChange={onApiKeyChange} />
 
       <label className="field">
         <span className="field-label">escape word</span>

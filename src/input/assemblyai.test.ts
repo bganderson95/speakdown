@@ -3,7 +3,9 @@ import { renderMarkdown } from "../model/renderMarkdown.js";
 import { parse } from "../parser/parse.js";
 import type { Microphone, MicrophoneOptions, PcmChunk } from "./microphone.js";
 import type { StreamingSocket, StreamingStatus } from "./assemblyai.js";
+import { API_KEY_HEADER as SERVER_API_KEY_HEADER } from "../../server/mintToken.js";
 import {
+  API_KEY_HEADER,
   DEFAULT_START_SILENCE_STOP_MS,
   buildSocketUrl,
   createAssemblyAISource,
@@ -557,5 +559,76 @@ describe("amplitude", () => {
     harness.microphone.emitChunk();
 
     expect(levels).toHaveLength(1);
+  });
+});
+
+describe("token requests", () => {
+  it("passes the viewer's key to the token endpoint", async () => {
+    const seen: Array<string | null> = [];
+    const { socket } = createFakeSocket();
+    const microphone = createFakeMicrophone();
+
+    const source = createAssemblyAISource({
+      getApiKey: () => "0123456789abcdef0123456789abcdef",
+      dependencies: {
+        fetchToken: async (_endpoint, apiKey) => {
+          seen.push(apiKey);
+          return "temp-token";
+        },
+        openMicrophone: microphone.open,
+        openSocket: () => socket,
+      },
+    });
+
+    await source.start();
+
+    expect(seen).toEqual(["0123456789abcdef0123456789abcdef"]);
+  });
+
+  it("sends null when the viewer has saved no key, letting the dev server decide", async () => {
+    const seen: Array<string | null> = [];
+    const { socket } = createFakeSocket();
+    const microphone = createFakeMicrophone();
+
+    const source = createAssemblyAISource({
+      dependencies: {
+        fetchToken: async (_endpoint, apiKey) => {
+          seen.push(apiKey);
+          return "temp-token";
+        },
+        openMicrophone: microphone.open,
+        openSocket: () => socket,
+      },
+    });
+
+    await source.start();
+
+    expect(seen).toEqual([null]);
+  });
+
+  it("surfaces the endpoint's own reason when it refuses", async () => {
+    const microphone = createFakeMicrophone();
+    const source = createAssemblyAISource({
+      dependencies: {
+        fetchToken: async () => {
+          throw new Error("This deployment has no API key of its own.");
+        },
+        openMicrophone: microphone.open,
+        openSocket: () => createFakeSocket().socket,
+      },
+    });
+
+    await source.start();
+
+    expect(source.getStatus()).toBe("error");
+    expect(source.getError()).toContain("no API key of its own");
+  });
+});
+
+describe("api key contract", () => {
+  it("uses the same header name the server reads", () => {
+    // The client declares its own copy to keep the import boundary intact;
+    // this is what stops the two from drifting apart.
+    expect(API_KEY_HEADER).toBe(SERVER_API_KEY_HEADER);
   });
 });

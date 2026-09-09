@@ -1,71 +1,48 @@
 /**
- * assemblyaiToken.ts — a dev/preview server endpoint that mints short-lived
- * AssemblyAI streaming tokens.
+ * assemblyaiToken.ts — the dev server's token endpoint.
  *
- * The AssemblyAI API key must never be shipped to the browser. The key lives in
- * the server environment (.env.local, which is gitignored); the browser calls
- * GET /api/assemblyai-token and receives a token that expires in a minute.
+ * Same contract as the deployed function in api/assemblyai-token.ts, with one
+ * deliberate difference: **in `vite dev` only**, a request that carries no key
+ * of its own falls back to ASSEMBLYAI_API_KEY from .env.local, so working on
+ * the app locally does not mean pasting a key into the UI every time.
  *
- * This runs only in `vite dev` and `vite preview`. Deploying Speakdown for real
- * means reimplementing this one endpoint on whatever backend you host, with the
- * same contract:  200 { token }  or  a non-200 with { error }.
+ * That fallback exists in `vite dev` and nowhere else. `vite preview` serves
+ * the production build and deliberately does NOT register this middleware, so
+ * previewing locally exercises the same "bring your own key" path a real
+ * deployment does.
  */
 
 import type { Connect, Plugin } from "vite";
+import { API_KEY_HEADER, MISSING_KEY_MESSAGE, mintToken } from "../server/mintToken.js";
 
 export const TOKEN_ROUTE = "/api/assemblyai-token";
 
-const TOKEN_URL = "https://streaming.assemblyai.com/v3/token";
-
-/** How long the browser has to open the socket with this token. */
-const EXPIRES_IN_SECONDS = 60;
-
 interface TokenPluginOptions {
-  /** The AssemblyAI API key, read from the server environment. */
+  /** Server-side key from the environment. Dev convenience only. */
   apiKey: string | undefined;
 }
 
-function sendJson(response: Parameters<Connect.NextHandleFunction>[1], status: number, body: unknown): void {
+function sendJson(
+  response: Parameters<Connect.NextHandleFunction>[1],
+  status: number,
+  body: unknown,
+): void {
   response.statusCode = status;
   response.setHeader("Content-Type", "application/json");
   response.setHeader("Cache-Control", "no-store");
   response.end(JSON.stringify(body));
 }
 
-/** Asks AssemblyAI for a temporary token using the server-side API key. */
-async function mintToken(apiKey: string): Promise<{ status: number; body: unknown }> {
-  const url = new URL(TOKEN_URL);
-  url.searchParams.set("expires_in_seconds", String(EXPIRES_IN_SECONDS));
-
-  let response: Response;
-  try {
-    response = await fetch(url, { headers: { authorization: apiKey } });
-  } catch (error) {
-    return {
-      status: 502,
-      body: { error: `Could not reach AssemblyAI: ${error instanceof Error ? error.message : ""}` },
-    };
+/** The key a request should use: the caller's own, else the dev environment. */
+function resolveKey(request: Connect.IncomingMessage, envKey: string | undefined): string | null {
+  const header = request.headers[API_KEY_HEADER];
+  const supplied = Array.isArray(header) ? header[0] : header;
+  if (supplied !== undefined && supplied.trim().length > 0) {
+    return supplied.trim();
   }
 
-  if (!response.ok) {
-    const detail = (await response.text()).slice(0, 300);
-    // Always 502, never AssemblyAI's own status. Forwarding their 404 for a bad
-    // key would read as "this endpoint does not exist" on our side; a non-200
-    // from this route should always mean "could not get you a token", with the
-    // reason in the body.
-    return {
-      status: 502,
-      body: { error: `AssemblyAI rejected the token request (${response.status}): ${detail}` },
-    };
-  }
-
-  const payload: unknown = await response.json();
-  const token = (payload as { token?: unknown }).token;
-  if (typeof token !== "string") {
-    return { status: 502, body: { error: "AssemblyAI did not return a token." } };
-  }
-
-  return { status: 200, body: { token, expires_in_seconds: EXPIRES_IN_SECONDS } };
+  const fallback = envKey?.trim();
+  return fallback !== undefined && fallback.length > 0 ? fallback : null;
 }
 
 export function assemblyaiTokenPlugin(options: TokenPluginOptions): Plugin {
@@ -77,11 +54,10 @@ export function assemblyaiTokenPlugin(options: TokenPluginOptions): Plugin {
       return;
     }
 
-    const apiKey = options.apiKey?.trim();
-    if (apiKey === undefined || apiKey.length === 0) {
-      sendJson(response, 503, {
-        error:
-          "ASSEMBLYAI_API_KEY is not set. Copy .env.example to .env.local, add your key, and restart the dev server.",
+    const apiKey = resolveKey(request, options.apiKey);
+    if (apiKey === null) {
+      sendJson(response, 401, {
+        error: `${MISSING_KEY_MESSAGE} For local development you can instead put ASSEMBLYAI_API_KEY in .env.local and restart the dev server.`,
       });
       return;
     }
@@ -97,10 +73,8 @@ export function assemblyaiTokenPlugin(options: TokenPluginOptions): Plugin {
 
   return {
     name: "speakdown:assemblyai-token",
+    // configureServer only: `vite preview` must behave like a deployment.
     configureServer(server) {
-      server.middlewares.use(handler);
-    },
-    configurePreviewServer(server) {
       server.middlewares.use(handler);
     },
   };

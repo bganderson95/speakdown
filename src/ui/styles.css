@@ -903,3 +903,54 @@ code {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Bring-your-own key                                                  */
+/* ------------------------------------------------------------------ */
+
+.apikey {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--s2);
+  flex-wrap: wrap;
+}
+
+.apikey-mask {
+  color: var(--ink);
+  letter-spacing: 0.04em;
+}
+
+.field-input-wide {
+  width: 216px;
+}
+
+.field-note {
+  color: var(--graphite);
+  opacity: 0.8;
+}
+
+/* Quiet inline actions. They read as text, not as more buttons in a row that
+   already has one. */
+.link-button,
+.field-link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--cobalt);
+  font: inherit;
+  font-size: var(--t-micro);
+  text-decoration-color: color-mix(in srgb, var(--cobalt) 40%, transparent);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.link-button {
+  text-decoration: underline;
+}
+
+.link-button:disabled {
+  color: var(--graphite);
+  opacity: 0.5;
+  cursor: default;
+  text-decoration: none;
+}

@@ -159,7 +159,23 @@ called. If a label needs the design rationale to make sense, it is wrong.
   focus treatment (`:focus-visible`, cobalt outline) rather than per-component
   focus styling.
 
-## 8. Testing (Vitest)
+## 8. API keys (bring your own)
+
+- **A deployment never holds a key.** `api/assemblyai-token.ts` refuses any
+  request without an `x-assemblyai-key` header. Do not add an environment
+  fallback there, and do not set `ASSEMBLYAI_API_KEY` on a host.
+- The **only** environment fallback is `vite dev`, as a local convenience.
+  `vite preview` deliberately omits the route so a preview behaves like a
+  deployment.
+- The key passes through `server/mintToken.ts` and is exchanged for a
+  60-second token. Never store it, never log it, never put it in a response.
+- The one server hop is not a design preference: AssemblyAI's token endpoint
+  sends no CORS headers and 405s on `OPTIONS`, so the browser cannot call it
+  directly. Do not "simplify" it away.
+- The client declares `API_KEY_HEADER` itself rather than importing from
+  `server/`, which would breach §4. A test asserts the two match.
+
+## 9. Testing (Vitest)
 
 - Every pure module (`model/`, `parser/`) is unit-tested.
 - One behavior per test, arrange/act/assert, plainly written.
@@ -169,7 +185,7 @@ called. If a label needs the design rationale to make sense, it is wrong.
   their tables broad.
 - Add a test (or lint rule) guarding the import boundaries in §4 if practical.
 
-## 9. Scope discipline
+## 10. Scope discipline
 
 - **Interpretive** transforms (summarize, translate, fix grammar) are a separate
   future tier and are explicitly out of scope — they cannot be deterministic.
@@ -186,7 +202,7 @@ called. If a label needs the design rationale to make sense, it is wrong.
   which becomes a real line break.
 - When unsure whether something belongs in v1, ask rather than assume.
 
-## 10. Working style for changes
+## 11. Working style for changes
 
 - Before editing, state briefly which module(s) you'll touch and why, and check
   it respects the import boundaries.

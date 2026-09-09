@@ -18,6 +18,7 @@ import type { OutputView } from "./Editor.js";
 import { Editor } from "./Editor.js";
 import { Recorder } from "./Recorder.js";
 import { Settings } from "./Settings.js";
+import { useApiKey } from "./useApiKey.js";
 import { useLiveTranscription } from "./useLiveTranscription.js";
 
 const SAMPLE_TRANSCRIPT = [
@@ -55,6 +56,7 @@ function joinTranscript(base: string, live: string): string {
 export function App() {
   const [transcript, setTranscript] = useState(SAMPLE_TRANSCRIPT);
   const [config, setConfig] = useState<ParserConfig>(DEFAULT_CONFIG);
+  const { apiKey, setApiKey } = useApiKey();
   const [escapeInput, setEscapeInput] = useState(DEFAULT_CONFIG.escapeWord);
   const [escapeError, setEscapeError] = useState<string | null>(null);
   const [view, setView] = useState<OutputView>("rendered");
@@ -70,8 +72,14 @@ export function App() {
 
   // What was in the box when recording started. Live turns are appended to it.
   const baseTranscriptRef = useRef("");
-  const live = useLiveTranscription((spoken) =>
-    setTranscript(joinTranscript(baseTranscriptRef.current, spoken)),
+  // The key is read through a ref-backed getter, so a session always uses the
+  // key that is saved when the user presses speak.
+  const apiKeyRef = useRef(apiKey);
+  apiKeyRef.current = apiKey;
+
+  const live = useLiveTranscription(
+    (spoken) => setTranscript(joinTranscript(baseTranscriptRef.current, spoken)),
+    () => (apiKeyRef.current.length > 0 ? apiKeyRef.current : null),
   );
 
   // The clock is injected rather than read inside the parser, which is what
@@ -176,6 +184,8 @@ export function App() {
 
       <div className="chrome-row">
         <Settings
+          apiKey={apiKey}
+          onApiKeyChange={setApiKey}
           escapeInput={escapeInput}
           escapeError={escapeError}
           onEscapeInputChange={handleEscapeInputChange}

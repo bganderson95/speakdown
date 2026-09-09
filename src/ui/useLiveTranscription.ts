@@ -23,7 +23,10 @@ export interface LiveTranscription {
   stop: () => Promise<void>;
 }
 
-export function useLiveTranscription(onTranscript: (transcript: string) => void): LiveTranscription {
+export function useLiveTranscription(
+  onTranscript: (transcript: string) => void,
+  getApiKey: () => string | null,
+): LiveTranscription {
   const sourceRef = useRef<StreamingSource | null>(null);
   const [status, setStatus] = useState<StreamingStatus>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -35,8 +38,13 @@ export function useLiveTranscription(onTranscript: (transcript: string) => void)
   const onTranscriptRef = useRef(onTranscript);
   onTranscriptRef.current = onTranscript;
 
+  const getApiKeyRef = useRef(getApiKey);
+  getApiKeyRef.current = getApiKey;
+
   if (sourceRef.current === null) {
-    sourceRef.current = createAssemblyAISource();
+    sourceRef.current = createAssemblyAISource({
+      getApiKey: () => getApiKeyRef.current(),
+    });
   }
   const source = sourceRef.current;
 

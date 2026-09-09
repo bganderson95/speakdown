@@ -1,6 +1,10 @@
 node_modules
 dist
-.DS_Store
+
+# Every env variant, however it is spelled. A misnamed file like ".env-local"
+# still holds a real API key, so match broadly and allow the template back in.
+.env*
+!.env.example
+
 *.local
-.env
-.env.local
+.DS_Store
