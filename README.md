@@ -85,6 +85,18 @@ With the transcript hidden the page takes the full width, text included. The
 narrower than that anyway; capping only the paper would have moved the empty
 space inside it.
 
+**The typing indicator.** Three dots at the end of the document while someone is
+actually talking — the messaging-app convention, answering "is it hearing me?".
+It is driven by microphone loudness rather than by recording status, because
+status stays true through long silences and would claim the app is hearing
+something when it is not. A 600ms hold keeps it steady through the gaps between
+words instead of strobing on every syllable, and it follows the end of the page
+so the answer is never below the fold. Under reduced motion the dots stop moving
+but stay visible, so the state is still legible.
+
+That divides the two live signals cleanly: the line beside the button says the
+microphone is open, the dots say words are landing in the page.
+
 **The resolution moment.** When a spoken command becomes formatting, the element
 that just resolved fades and settles over 160ms. It fires only when the
 document's *shape* changes — typing ordinary words does not trigger it — and it

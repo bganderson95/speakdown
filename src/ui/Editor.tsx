@@ -5,6 +5,7 @@
  * into. Reading left to right is the translation the product performs.
  */
 
+import { TypingIndicator } from "./TypingIndicator.js";
 import { useResolution } from "./useResolution.js";
 
 export type OutputView = "rendered" | "raw";
@@ -21,6 +22,8 @@ interface EditorProps {
   readOnly: boolean;
   /** False hides the transcript; the document keeps its place and widens. */
   transcriptOpen: boolean;
+  /** True while the microphone is actually picking up speech. */
+  speaking: boolean;
 }
 
 /** Phrases worth trying first, shown when there is nothing to render yet. */
@@ -98,6 +101,7 @@ export function Editor({
   escapeWord,
   readOnly,
   transcriptOpen,
+  speaking,
 }: EditorProps) {
   const documentRef = useResolution(html);
   const isEmpty = html.length === 0;
@@ -132,7 +136,7 @@ export function Editor({
         </div>
 
         <div className="page">
-          {isEmpty ? (
+          {isEmpty && !speaking ? (
             <EmptySurface escapeWord={escapeWord} />
           ) : view === "rendered" ? (
             // The HTML comes from renderHtml.ts, which escapes all text and
@@ -148,6 +152,8 @@ export function Editor({
               {markdown}
             </pre>
           )}
+
+          {speaking && <TypingIndicator follow={view === "rendered" ? html : markdown} />}
         </div>
       </section>
     </div>

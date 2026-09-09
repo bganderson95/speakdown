@@ -19,6 +19,7 @@ import { Editor } from "./Editor.js";
 import { Recorder } from "./Recorder.js";
 import { Settings } from "./Settings.js";
 import { useApiKey } from "./useApiKey.js";
+import { useVoiceActivity } from "./useVoiceActivity.js";
 import { useLiveTranscription } from "./useLiveTranscription.js";
 
 const SAMPLE_TRANSCRIPT = [
@@ -85,6 +86,10 @@ export function App() {
   // The clock is injected rather than read inside the parser, which is what
   // keeps the date transformation pure and testable. Reading it here means
   // "date today" resolves against the moment the transcript last changed.
+  // "Someone is talking right now", which is a stricter thing than "the
+  // microphone is open" and is what the typing indicator reports.
+  const speaking = useVoiceActivity(live.amplitude, live.status === "listening");
+
   const parseResult = useMemo(() => parse(transcript, config, new Date()), [transcript, config]);
   const needsClipboard = hasClipboardLinks(parseResult.document);
 
@@ -212,6 +217,7 @@ export function App() {
         escapeWord={config.escapeWord}
         readOnly={live.isActive}
         transcriptOpen={transcriptOpen}
+        speaking={speaking}
       />
 
       {(notices.length > 0 || needsClipboard) && (

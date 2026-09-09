@@ -115,6 +115,11 @@ describe("App", () => {
     expect(button).toBeLessThan(meter);
   });
 
+  it("shows no typing indicator when nothing is being said", () => {
+    // It reports live speech, not merely that the app is running.
+    expect(markup).not.toContain("typing-dot");
+  });
+
   it("reports what formatting is still open", () => {
     // The sample closes everything it opens.
     expect(markup).toContain("nothing open");
