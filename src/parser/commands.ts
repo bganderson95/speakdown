@@ -398,99 +398,136 @@ function closerText(command: { closers: readonly (readonly string[])[] }): strin
  * Generated from SCOPE_COMMANDS and the live config, so the help panel cannot
  * describe a command the parser does not accept.
  */
+/** One open/close command, as a help row. */
+function scopeDoc(command: ScopeCommand, group: CommandGroup): CommandDoc {
+  return {
+    phrase: phraseList(command.opens),
+    description: `Open ${command.label}. Close with: ${closerText(command)}.`,
+    group,
+  };
+}
+
+function scopesOfKind(kind: ScopeTarget["kind"]): ScopeCommand[] {
+  return SCOPE_COMMANDS.filter((command) => command.target.kind === kind);
+}
+
+function inlineMarkDocs(): CommandDoc[] {
+  return scopesOfKind("mark").map((command) => scopeDoc(command, "Inline marks"));
+}
+
+/**
+ * Blocks, in the order someone builds a document: the heading over a section,
+ * then the block kinds, then the two commands that act on a list, then the
+ * most specialized block last.
+ */
+function blockDocs(): CommandDoc[] {
+  return [
+    {
+      phrase: `${phraseText(PHRASE_HEADING)} <1-6>`,
+      description: `Open a heading; "heading" alone is the top level. Close with: ${phraseList(HEADING_CLOSERS)}.`,
+      group: "Blocks",
+    },
+    ...scopesOfKind("quote").map((command) => scopeDoc(command, "Blocks")),
+    ...scopesOfKind("list").map((command) => scopeDoc(command, "Blocks")),
+    {
+      phrase: phraseText(PHRASE_NEXT_ITEM),
+      description: "Start the next list item.",
+      group: "Blocks",
+    },
+    {
+      phrase: `${phraseText(PHRASE_CHECK_THAT)} / ${phraseText(PHRASE_UNCHECK_THAT)}`,
+      description: "Tick or untick the task-list item you just spoke.",
+      group: "Blocks",
+    },
+    {
+      phrase: `${phraseList(CODE_BLOCK_OPENS)} [language] … ${phraseList(CODE_BLOCK_CLOSERS)}`,
+      description: 'Fenced code block, e.g. "code block python … end code block".',
+      group: "Blocks",
+    },
+  ];
+}
+
+function transformDocs(): CommandDoc[] {
+  return TRANSFORM_COMMANDS.map((command) => ({
+    phrase: `${phraseList(command.opens)} … ${closerText(command)}`,
+    description: `Speak it, and ${command.label} replaces your words. e.g. ${command.example}`,
+    group: "Transformations" as const,
+  }));
+}
+
+/** Closing, breaking and separating — the moves between blocks. */
+function structureDocs(): CommandDoc[] {
+  return [
+    {
+      phrase: phraseText(PHRASE_END_INNERMOST),
+      description: "Close the most recently opened mark or block.",
+      group: "Structure",
+    },
+    {
+      phrase: phraseText(PHRASE_END_ALL),
+      description: "Close everything that is still open.",
+      group: "Structure",
+    },
+    {
+      phrase: phraseText(PHRASE_NEW_LINE),
+      description: "Soft line break inside the current block.",
+      group: "Structure",
+    },
+    {
+      phrase: phraseText(PHRASE_NEW_PARAGRAPH),
+      description: "End the current block and start a paragraph.",
+      group: "Structure",
+    },
+    {
+      phrase: `${phraseText(PHRASE_DIVIDER)} / ${phraseText(PHRASE_HORIZONTAL_RULE)}`,
+      description: "Insert a horizontal rule.",
+      group: "Structure",
+    },
+  ];
+}
+
+function insertDocs(): CommandDoc[] {
+  return [
+    {
+      phrase: "link <display words> to <spoken url>",
+      description: 'Insert a link, e.g. "link the docs to example dot com slash q3".',
+      group: "Insert",
+    },
+    {
+      phrase: "link <display words> to clipboard",
+      description: "Insert a link using the URL on your clipboard.",
+      group: "Insert",
+    },
+    {
+      phrase: "emoji <name>",
+      description: 'Insert an emoji by name, e.g. "emoji thumbs up".',
+      group: "Insert",
+    },
+  ];
+}
+
+function editingDocs(config: ParserConfig): CommandDoc[] {
+  return [
+    {
+      phrase: `${config.escapeWord} <word>`,
+      description: "Escape: emit the next single word literally, even a command word.",
+      group: "Editing",
+    },
+    {
+      phrase: phraseText(PHRASE_SCRATCH_THAT),
+      description: "Undo the most recent action.",
+      group: "Editing",
+    },
+  ];
+}
+
 export function describeCommands(config: ParserConfig): CommandDoc[] {
-  const docs: CommandDoc[] = [];
-
-  for (const command of SCOPE_COMMANDS) {
-    const group: CommandGroup = command.target.kind === "mark" ? "Inline marks" : "Blocks";
-    docs.push({
-      phrase: phraseList(command.opens),
-      description: `Open ${command.label}. Close with: ${closerText(command)}.`,
-      group,
-    });
-  }
-
-  docs.push({
-    phrase: `${phraseText(PHRASE_HEADING)} <1-6>`,
-    description: `Open a heading; "heading" alone is the top level. Close with: ${phraseList(HEADING_CLOSERS)}.`,
-    group: "Blocks",
-  });
-  docs.push({
-    phrase: phraseText(PHRASE_NEXT_ITEM),
-    description: "Start the next list item.",
-    group: "Blocks",
-  });
-  docs.push({
-    phrase: `${phraseText(PHRASE_CHECK_THAT)} / ${phraseText(PHRASE_UNCHECK_THAT)}`,
-    description: "Tick or untick the task-list item you just spoke.",
-    group: "Blocks",
-  });
-  docs.push({
-    phrase: `${phraseList(CODE_BLOCK_OPENS)} [language] … ${phraseList(CODE_BLOCK_CLOSERS)}`,
-    description: 'Fenced code block, e.g. "code block python … end code block".',
-    group: "Blocks",
-  });
-
-  for (const command of TRANSFORM_COMMANDS) {
-    docs.push({
-      phrase: `${phraseList(command.opens)} … ${closerText(command)}`,
-      description: `Speak it, and ${command.label} replaces your words. e.g. ${command.example}`,
-      group: "Transformations",
-    });
-  }
-
-  docs.push({
-    phrase: phraseText(PHRASE_END_INNERMOST),
-    description: "Close the most recently opened mark or block.",
-    group: "Structure",
-  });
-  docs.push({
-    phrase: phraseText(PHRASE_END_ALL),
-    description: "Close everything that is still open.",
-    group: "Structure",
-  });
-  docs.push({
-    phrase: phraseText(PHRASE_NEW_LINE),
-    description: "Soft line break inside the current block.",
-    group: "Structure",
-  });
-  docs.push({
-    phrase: phraseText(PHRASE_NEW_PARAGRAPH),
-    description: "End the current block and start a paragraph.",
-    group: "Structure",
-  });
-  docs.push({
-    phrase: `${phraseText(PHRASE_DIVIDER)} / ${phraseText(PHRASE_HORIZONTAL_RULE)}`,
-    description: "Insert a horizontal rule.",
-    group: "Structure",
-  });
-
-  docs.push({
-    phrase: "link <display words> to <spoken url>",
-    description: 'Insert a link, e.g. "link the docs to example dot com slash q3".',
-    group: "Insert",
-  });
-  docs.push({
-    phrase: "link <display words> to clipboard",
-    description: "Insert a link using the URL on your clipboard.",
-    group: "Insert",
-  });
-  docs.push({
-    phrase: "emoji <name>",
-    description: 'Insert an emoji by name, e.g. "emoji thumbs up".',
-    group: "Insert",
-  });
-
-  docs.push({
-    phrase: `${config.escapeWord} <word>`,
-    description: "Escape: emit the next single word literally, even a command word.",
-    group: "Editing",
-  });
-  docs.push({
-    phrase: phraseText(PHRASE_SCRATCH_THAT),
-    description: "Undo the most recent action.",
-    group: "Editing",
-  });
-
-  return docs;
+  return [
+    ...inlineMarkDocs(),
+    ...blockDocs(),
+    ...transformDocs(),
+    ...structureDocs(),
+    ...insertDocs(),
+    ...editingDocs(config),
+  ];
 }
