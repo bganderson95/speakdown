@@ -8,3 +8,6 @@ dist
 
 *.local
 .DS_Store
+
+# Vercel deploy metadata
+.vercel
