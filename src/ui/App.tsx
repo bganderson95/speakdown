@@ -154,6 +154,8 @@ export function App() {
 
       <div className="chrome-row">
         <Settings
+          onClear={handleClearTranscript}
+          canClear={!live.isActive && transcript.length > 0}
           apiKey={apiKey}
           onApiKeyChange={setApiKey}
           escapeInput={escapeInput}
@@ -162,14 +164,6 @@ export function App() {
           transcriptOpen={transcriptOpen}
           onTranscriptOpenChange={setTranscriptOpen}
         />
-        <button
-          type="button"
-          className="ghost-button"
-          onClick={handleClearTranscript}
-          disabled={live.isActive || transcript.length === 0}
-        >
-          clear
-        </button>
       </div>
 
       <Editor

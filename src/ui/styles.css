@@ -164,13 +164,19 @@ body {
   font-weight: 400;
 }
 
-/* The same listening dots the document uses, at wordmark scale. */
+/*
+ * The same listening dots the document uses, at wordmark scale.
+ *
+ * They rest on the baseline like a row of full stops. The span holds no text,
+ * so its synthesized baseline is its bottom edge — which is exactly what
+ * align-self: baseline needs to put the dots on the line the letters sit on.
+ */
 .wordmark-dots {
   display: inline-flex;
   align-items: center;
   gap: 0.09em;
   margin-left: 0.16em;
-  align-self: center;
+  align-self: baseline;
 }
 
 .wordmark-dots i {
@@ -765,7 +771,6 @@ body {
 .chrome-row {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
   gap: var(--s4);
   flex-wrap: wrap;
   margin-top: calc(var(--s8) * -1 + var(--s2));
