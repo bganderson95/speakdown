@@ -138,10 +138,10 @@ export function Editor({
           <h2 className="panel-label">document</h2>
 
           <div className="document-actions">
+            <ViewSwitch view={view} onViewChange={onViewChange} />
             <button type="button" className="ghost-button" onClick={onClear} disabled={!canClear}>
               clear
             </button>
-            <ViewSwitch view={view} onViewChange={onViewChange} />
           </div>
         </div>
 
