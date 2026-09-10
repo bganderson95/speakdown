@@ -438,6 +438,13 @@ body {
   margin: 0;
 }
 
+/* Clear sits beside the view switch, both acting on what is shown here. */
+.document-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+}
+
 /* The one raised surface on screen. This is where the boldness is spent. */
 .page {
   flex: 1;

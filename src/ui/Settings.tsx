@@ -1,7 +1,6 @@
 /**
  * Settings.tsx — the controls that are not part of composing: whether the
- * transcript is visible, clearing it, the API key, and which word escapes a
- * command.
+ * transcript is visible, the API key, and which word escapes a command.
  *
  * Kept out of the instrument bar so that bar stays about the voice.
  */
@@ -9,8 +8,6 @@
 import { ApiKeyField } from "./ApiKeyField.js";
 
 interface SettingsProps {
-  onClear: () => void;
-  canClear: boolean;
   apiKey: string;
   onApiKeyChange: (value: string) => void;
   escapeInput: string;
@@ -21,8 +18,6 @@ interface SettingsProps {
 }
 
 export function Settings({
-  onClear,
-  canClear,
   apiKey,
   onApiKeyChange,
   escapeInput,
@@ -45,11 +40,6 @@ export function Settings({
         />
         show transcript
       </label>
-
-      {/* Beside the toggle, because both are about the transcript. */}
-      <button type="button" className="ghost-button" onClick={onClear} disabled={!canClear}>
-        clear
-      </button>
 
       <ApiKeyField apiKey={apiKey} onApiKeyChange={onApiKeyChange} />
 

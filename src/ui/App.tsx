@@ -154,8 +154,6 @@ export function App() {
 
       <div className="chrome-row">
         <Settings
-          onClear={handleClearTranscript}
-          canClear={!live.isActive && transcript.length > 0}
           apiKey={apiKey}
           onApiKeyChange={setApiKey}
           escapeInput={escapeInput}
@@ -177,6 +175,8 @@ export function App() {
         readOnly={live.isActive}
         transcriptOpen={transcriptOpen}
         speaking={speaking}
+        onClear={handleClearTranscript}
+        canClear={!live.isActive && transcript.length > 0}
       />
 
       {(notices.length > 0 || clipboard.awaitingClipboard) && (

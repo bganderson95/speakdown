@@ -22,6 +22,8 @@ interface EditorProps {
   readOnly: boolean;
   /** False hides the transcript; the document keeps its place and widens. */
   transcriptOpen: boolean;
+  onClear: () => void;
+  canClear: boolean;
   /** True while the microphone is actually picking up speech. */
   speaking: boolean;
 }
@@ -102,6 +104,8 @@ export function Editor({
   readOnly,
   transcriptOpen,
   speaking,
+  onClear,
+  canClear,
 }: EditorProps) {
   const documentRef = useResolution(html);
   const isEmpty = html.length === 0;
@@ -132,7 +136,13 @@ export function Editor({
       <section className="document">
         <div className="document-head">
           <h2 className="panel-label">document</h2>
-          <ViewSwitch view={view} onViewChange={onViewChange} />
+
+          <div className="document-actions">
+            <button type="button" className="ghost-button" onClick={onClear} disabled={!canClear}>
+              clear
+            </button>
+            <ViewSwitch view={view} onViewChange={onViewChange} />
+          </div>
         </div>
 
         <div className="page">
