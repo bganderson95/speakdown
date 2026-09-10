@@ -146,6 +146,15 @@ body {
   white-space: pre;
 }
 
+/*
+ * A zero-width space, always present. Without it the span holds no text before
+ * the first letter arrives, so the heading has no text line box and is shorter
+ * — and the whole page shifts down the moment "p" appears.
+ */
+.wordmark-letters::before {
+  content: "\200B";
+}
+
 /* "Speak" is bold; the scope closes and "down" comes out regular. */
 .wordmark-bold {
   font-weight: 700;
@@ -181,9 +190,9 @@ body {
   animation-delay: 0.28s;
 }
 
-/* Held back until the word has finished writing itself, so nothing shifts. */
 .tagline {
-  opacity: 0;
+  display: flex;
+  align-items: baseline;
   margin: 0;
   font-family: var(--font-document);
   font-size: var(--t-base);
@@ -191,14 +200,9 @@ body {
   color: var(--graphite);
 }
 
-.tagline-in {
-  animation: tagline-in var(--calm) var(--ease) forwards;
-}
-
-@keyframes tagline-in {
-  to {
-    opacity: 1;
-  }
+/* Same strut as the wordmark, so an empty tagline still holds its line. */
+.tagline::before {
+  content: "\200B";
 }
 
 /* ------------------------------------------------------------------ */

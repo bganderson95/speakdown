@@ -3,18 +3,32 @@
  * tagline that follows it.
  *
  * The S is the logo rather than a glyph, so the whole thing carries an
- * aria-label and the drawn parts are hidden from assistive technology.
- *
- * The tagline lives here rather than in App because the two are one movement:
- * it waits for the word to finish writing itself, since letters arriving would
- * otherwise shove it sideways a step at a time.
+ * aria-label and the drawn parts are hidden from assistive technology. The
+ * tagline lives here rather than in App because the two are one movement: the
+ * writing cursor finishes the word, then moves down and writes the tagline.
  */
 
 import { LOGO_PATH, LOGO_VIEW_BOX } from "./logoPath.js";
-import { BOLD_THROUGH, WORDMARK_LETTERS, useWordmarkAnimation } from "./useWordmarkAnimation.js";
+import {
+  BOLD_THROUGH,
+  TAGLINE,
+  WORDMARK_LETTERS,
+  useWordmarkAnimation,
+} from "./useWordmarkAnimation.js";
+
+/** The three dots that trail whatever is being written. */
+function WritingCursor() {
+  return (
+    <span className="wordmark-dots" aria-hidden="true">
+      <i />
+      <i />
+      <i />
+    </span>
+  );
+}
 
 export function Masthead() {
-  const { revealed, listening, finished } = useWordmarkAnimation();
+  const { revealed, taglineRevealed, cursor } = useWordmarkAnimation();
 
   return (
     <header className="masthead">
@@ -30,28 +44,24 @@ export function Masthead() {
         </svg>
 
         <span className="wordmark-letters" aria-hidden="true">
-          {WORDMARK_LETTERS.split("").map((letter, index) =>
-            index < revealed ? (
+          {WORDMARK_LETTERS.slice(0, revealed)
+            .split("")
+            .map((letter, index) => (
               <span
                 key={`${letter}-${index}`}
                 className={index < BOLD_THROUGH ? "wordmark-bold" : "wordmark-regular"}
               >
                 {letter}
               </span>
-            ) : null,
-          )}
-
-          {listening && (
-            <span className="wordmark-dots">
-              <i />
-              <i />
-              <i />
-            </span>
-          )}
+            ))}
+          {cursor === "wordmark" && <WritingCursor />}
         </span>
       </h1>
 
-      <p className={finished ? "tagline tagline-in" : "tagline"}>speech to rich text</p>
+      <p className="tagline" aria-label={TAGLINE}>
+        <span aria-hidden="true">{TAGLINE.slice(0, taglineRevealed)}</span>
+        {cursor === "tagline" && <WritingCursor />}
+      </p>
     </header>
   );
 }
