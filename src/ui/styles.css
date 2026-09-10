@@ -1079,3 +1079,34 @@ code {
     transform: translateY(-3px);
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Footer                                                              */
+/* ------------------------------------------------------------------ */
+
+.footer {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s4);
+  flex-wrap: wrap;
+  padding-top: var(--s6);
+  border-top: 1px solid var(--rule);
+  font-size: var(--t-micro);
+  color: var(--graphite);
+}
+
+.footer-links {
+  display: flex;
+  gap: var(--s4);
+}
+
+.footer-links a {
+  color: var(--cobalt);
+  text-decoration-color: color-mix(in srgb, var(--cobalt) 40%, transparent);
+  text-underline-offset: 3px;
+}
+
+.footer-links a:hover {
+  text-decoration-color: currentColor;
+}

@@ -15,6 +15,7 @@ import { parse } from "../parser/parse.js";
 import { CommandHelp } from "./CommandHelp.js";
 import type { OutputView } from "./Editor.js";
 import { Editor } from "./Editor.js";
+import { Footer } from "./Footer.js";
 import { Recorder } from "./Recorder.js";
 import { Settings } from "./Settings.js";
 import { Masthead } from "./Masthead.js";
@@ -195,6 +196,8 @@ export function App() {
       )}
 
       <CommandHelp config={config} />
+
+      <Footer />
     </div>
   );
 }
