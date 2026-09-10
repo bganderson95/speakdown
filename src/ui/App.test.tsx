@@ -21,8 +21,9 @@ describe("App", () => {
   })();
 
   it("renders the masthead", () => {
-    expect(markup).toContain("Speak");
-    expect(markup).toContain("down");
+    // The S is the logo rather than a glyph, so the name lives in the label.
+    expect(markup).toContain('aria-label="Speakdown"');
+    expect(markup).toContain("wordmark-mark");
     expect(markup).toContain("speech to rich text");
   });
 

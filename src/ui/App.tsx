@@ -17,6 +17,7 @@ import type { OutputView } from "./Editor.js";
 import { Editor } from "./Editor.js";
 import { Recorder } from "./Recorder.js";
 import { Settings } from "./Settings.js";
+import { Masthead } from "./Masthead.js";
 import { useApiKey } from "./useApiKey.js";
 import { useClipboardLinks } from "./useClipboardLinks.js";
 import { useVoiceActivity } from "./useVoiceActivity.js";
@@ -140,13 +141,7 @@ export function App() {
 
   return (
     <div className="app">
-      <header className="masthead">
-        <h1 className="wordmark">
-          <span className="wordmark-speak">Speak</span>
-          <span className="wordmark-down">down</span>
-        </h1>
-        <p className="tagline">speech to rich text</p>
-      </header>
+      <Masthead />
 
       <Recorder
         status={live.status}

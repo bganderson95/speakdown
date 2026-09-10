@@ -30,6 +30,8 @@
   /* --- Type: two variable families, opposed roles --- */
   --font-document: "Newsreader", Georgia, "Times New Roman", serif;
   --font-instrument: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  /* The wordmark only: the logo's S was drawn from this face. */
+  --font-wordmark: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
 
   /* Scale, ratio 1.25 */
   --t-micro: 0.75rem; /* 12 */
@@ -115,28 +117,88 @@ body {
 }
 
 .wordmark {
+  display: flex;
+  align-items: baseline;
   margin: 0;
-  font-family: var(--font-document);
+  font-family: var(--font-wordmark);
   font-size: var(--t-shout);
   line-height: 1;
-  letter-spacing: -0.022em;
+  letter-spacing: -0.02em;
 }
 
-/* Same word, two weights: the voice on the left, the type on the right. */
-.wordmark-speak {
-  font-weight: 300;
+/*
+ * The mark stands in for the S, so it is sized to the cap height of the letters
+ * beside it and sits on the same baseline. Nudge the two numbers together if
+ * the face ever changes.
+ */
+.wordmark-mark {
+  height: 0.75em;
+  width: auto;
+  /* Negative, so the mark sits as close to the "p" as the letters do to each
+     other and the whole thing reads as one word rather than a badge plus text. */
+  margin-right: -0.015em;
+  transform: translateY(0.012em);
 }
 
-.wordmark-down {
+.wordmark-letters {
+  display: inline-flex;
+  align-items: baseline;
+  white-space: pre;
+}
+
+/* "Speak" is bold; the scope closes and "down" comes out regular. */
+.wordmark-bold {
   font-weight: 700;
 }
 
+.wordmark-regular {
+  font-weight: 400;
+}
+
+/* The same listening dots the document uses, at wordmark scale. */
+.wordmark-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.09em;
+  margin-left: 0.16em;
+  align-self: center;
+}
+
+.wordmark-dots i {
+  width: 0.13em;
+  height: 0.13em;
+  border-radius: 50%;
+  background: var(--cobalt);
+  opacity: 0.85;
+  animation: typing-rise 1.1s var(--ease) infinite;
+}
+
+.wordmark-dots i:nth-child(2) {
+  animation-delay: 0.14s;
+}
+
+.wordmark-dots i:nth-child(3) {
+  animation-delay: 0.28s;
+}
+
+/* Held back until the word has finished writing itself, so nothing shifts. */
 .tagline {
+  opacity: 0;
   margin: 0;
   font-family: var(--font-document);
   font-size: var(--t-base);
   font-style: italic;
   color: var(--graphite);
+}
+
+.tagline-in {
+  animation: tagline-in var(--calm) var(--ease) forwards;
+}
+
+@keyframes tagline-in {
+  to {
+    opacity: 1;
+  }
 }
 
 /* ------------------------------------------------------------------ */
