@@ -6,9 +6,9 @@
  */
 
 import { TypingIndicator } from "./TypingIndicator.js";
+import type { OutputView } from "./ViewSwitch.js";
+import { ViewSwitch } from "./ViewSwitch.js";
 import { useResolution } from "./useResolution.js";
-
-export type OutputView = "rendered" | "raw";
 
 interface EditorProps {
   transcript: string;
@@ -22,10 +22,11 @@ interface EditorProps {
   readOnly: boolean;
   /** False hides the transcript; the document keeps its place and widens. */
   transcriptOpen: boolean;
-  onClear: () => void;
-  canClear: boolean;
+  onTranscriptOpenChange: (open: boolean) => void;
   /** True while the microphone is actually picking up speech. */
   speaking: boolean;
+  onClear: () => void;
+  canClear: boolean;
 }
 
 /** Phrases worth trying first, shown when there is nothing to render yet. */
@@ -56,43 +57,6 @@ function EmptySurface({ escapeWord }: { escapeWord: string }) {
   );
 }
 
-/**
- * The rendered/raw switch.
- *
- * The two views are the same document in two voices, so the control sits on the
- * document itself and the transition between them is a crossfade rather than a
- * swap — the point is that nothing changed but the form.
- */
-function ViewSwitch({
-  view,
-  onViewChange,
-}: {
-  view: OutputView;
-  onViewChange: (view: OutputView) => void;
-}) {
-  return (
-    <div className="switch" role="group" aria-label="Output view">
-      <span className={view === "rendered" ? "switch-thumb" : "switch-thumb switch-thumb-raw"} />
-      <button
-        type="button"
-        className="switch-option"
-        aria-pressed={view === "rendered"}
-        onClick={() => onViewChange("rendered")}
-      >
-        rendered
-      </button>
-      <button
-        type="button"
-        className="switch-option"
-        aria-pressed={view === "raw"}
-        onClick={() => onViewChange("raw")}
-      >
-        raw
-      </button>
-    </div>
-  );
-}
-
 export function Editor({
   transcript,
   onTranscriptChange,
@@ -103,6 +67,7 @@ export function Editor({
   escapeWord,
   readOnly,
   transcriptOpen,
+  onTranscriptOpenChange,
   speaking,
   onClear,
   canClear,
@@ -119,7 +84,7 @@ export function Editor({
     <div className={transcriptOpen ? "workspace" : "workspace workspace-solo"}>
       {transcriptOpen && (
         <section className="transcript-panel">
-          <h2 className="panel-label">transcript{readOnly ? " · live" : ""}</h2>
+          <h2 className="panel-label">Transcript{readOnly ? " — live" : ""}</h2>
           <textarea
             id="transcript-input"
             className={readOnly ? "transcript transcript-live" : "transcript"}
@@ -135,12 +100,21 @@ export function Editor({
 
       <section className="document">
         <div className="document-head">
-          <h2 className="panel-label">document</h2>
+          <h2 className="panel-label">Document</h2>
 
+          {/* Everything here acts on the panel underneath it, so it sits on it. */}
           <div className="document-actions">
+            <label className="quiet-toggle">
+              <input
+                type="checkbox"
+                checked={transcriptOpen}
+                onChange={(event) => onTranscriptOpenChange(event.target.checked)}
+              />
+              Show transcript
+            </label>
             <ViewSwitch view={view} onViewChange={onViewChange} />
             <button type="button" className="ghost-button" onClick={onClear} disabled={!canClear}>
-              clear
+              Clear
             </button>
           </div>
         </div>

@@ -80,49 +80,73 @@ describe("App", () => {
     expect(markup).not.toContain("voice-line-live");
   });
 
-  it("offers the speak control and says it is not recording", () => {
-    expect(markup).toContain("speak-button");
-    expect(markup).toContain("not recording");
+  it("offers Record, and the status agrees with it", () => {
+    expect(markup).toContain("record-button");
+    expect(markup).toContain(">Record<");
+    expect(markup).toContain("Not recording");
   });
 
-  it("puts the rendered/raw switch on the document, not in the chrome", () => {
-    const workspace = markup.indexOf('class="workspace');
-    const toggle = markup.indexOf('aria-label="Output view"');
-
-    expect(toggle).toBeGreaterThan(workspace);
-    expect(markup).toContain('aria-pressed="true"');
-  });
-
-  it("shows the transcript when no key is saved, since typing is all a visitor can do", () => {
-    expect(markup).not.toContain("workspace-solo");
-    expect(markup).toContain('id="transcript-input"');
-  });
-
-  it("puts the transcript control above the panels, never below what it hides", () => {
-    const controls = markup.indexOf('class="chrome-row"');
-    const workspace = markup.indexOf('class="workspace');
-
-    expect(controls).toBeGreaterThan(-1);
-    expect(controls).toBeLessThan(workspace);
-    expect(markup).toContain("show transcript");
-  });
-
-  it("keeps the meter with the button rather than spanning the page", () => {
-    const transport = markup.indexOf('class="transport"');
-    const button = markup.indexOf("speak-button");
+  it("puts recording in one row before the workspace, and nothing else", () => {
+    // Record, then the meter and status — one sweep, then the page itself.
+    const bar = markup.indexOf('class="action-bar"');
+    const record = markup.indexOf("record-button");
     const meter = markup.indexOf("voice-well");
+    const workspace = markup.indexOf('class="workspace');
 
-    expect(transport).toBeLessThan(button);
-    expect(button).toBeLessThan(meter);
+    expect(bar).toBeGreaterThan(-1);
+    expect(bar).toBeLessThan(record);
+    expect(record).toBeLessThan(meter);
+    expect(meter).toBeLessThan(workspace);
   });
 
-  it("shows no typing indicator when nothing is being said", () => {
-    // It reports live speech, not merely that the app is running.
-    expect(markup).not.toContain("typing-dot");
+  it("puts the controls that act on the document onto the document header", () => {
+    // Show transcript, the view switch and Clear all change what the panel
+    // below them shows, so they sit on it rather than up in the action row.
+    const actions = markup.indexOf('class="document-actions"');
+    const page = markup.indexOf('class="page"');
+
+    expect(markup.indexOf('class="action-bar"')).toBeLessThan(actions);
+    expect(actions).toBeLessThan(page);
+    for (const control of ["quiet-toggle", "switch-option", ">Clear<"]) {
+      const at = markup.indexOf(control);
+      expect(at).toBeGreaterThan(actions);
+      expect(at).toBeLessThan(page);
+    }
   });
 
-  it("reports what formatting is still open", () => {
-    // The sample closes everything it opens.
-    expect(markup).toContain("nothing open");
+  it("sets the escape word in the vocabulary, with no settings menu at all", () => {
+    // One setting did not earn a menu. It sits with the commands it governs,
+    // and Editing leads the groups so it is the first thing under the intro.
+    const editing = markup.indexOf(">Editing<");
+    const field = markup.indexOf('id="escape-word-input"');
+
+    expect(markup).not.toContain("settings-trigger");
+    expect(markup).toContain("Escape word");
+    expect(editing).toBeGreaterThan(-1);
+    expect(field).toBeGreaterThan(editing);
+    expect(editing).toBeLessThan(markup.indexOf(">Inline marks<"));
+  });
+
+  it("asks for a key in the masthead, because nothing records without one", () => {
+    // Required steps do not go behind a disclosure. The field itself is in the
+    // chrome, beside Settings rather than inside it.
+    const aside = markup.indexOf('class="masthead-aside"');
+    const keybar = markup.indexOf('class="keybar"');
+
+    expect(aside).toBeGreaterThan(-1);
+    expect(keybar).toBeGreaterThan(aside);
+    expect(keybar).toBeLessThan(markup.indexOf('class="action-bar"'));
+    expect(markup).toContain("AssemblyAI key needed to record");
+    expect(markup).toContain("Get a free key");
+  });
+
+  it("does not say a key is saved when none is", () => {
+    expect(markup).not.toContain("key-chip");
+  });
+
+  it("says nothing about open formatting when none is open", () => {
+    // The sample closes everything it opens, so the row is absent entirely
+    // rather than carrying a permanent "nothing open" label.
+    expect(markup).not.toContain('aria-label="Still open"');
   });
 });

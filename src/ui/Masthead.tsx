@@ -8,6 +8,7 @@
  * writing cursor finishes the word, then moves down and writes the tagline.
  */
 
+import type { ReactNode } from "react";
 import { LOGO_PATH, LOGO_VIEW_BOX } from "./logoPath.js";
 import {
   BOLD_THROUGH,
@@ -27,7 +28,12 @@ function WritingCursor() {
   );
 }
 
-export function Masthead() {
+interface MastheadProps {
+  /** The key control and settings, which sit opposite the wordmark. */
+  children?: ReactNode;
+}
+
+export function Masthead({ children }: MastheadProps) {
   const { revealed, taglineRevealed, cursor } = useWordmarkAnimation();
 
   return (
@@ -62,6 +68,8 @@ export function Masthead() {
         <span aria-hidden="true">{TAGLINE.slice(0, taglineRevealed)}</span>
         {cursor === "tagline" && <WritingCursor />}
       </p>
+
+      <div className="masthead-aside">{children}</div>
     </header>
   );
 }

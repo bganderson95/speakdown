@@ -10,36 +10,47 @@
  * other element is deliberately quiet.
  */
 
+/*
+ * Speakdown.
+ *
+ * Two zones of type: Space Grotesk is the tool, Newsreader is the thing the
+ * tool makes. Monospace survives only where "these are literal characters" is
+ * the point — code, the raw view, the captured transcript.
+ *
+ * One accent, spent on the primary action, what is live, and what is active.
+ * Everything else is quiet neutrals drawn from the mark's own near-black.
+ */
+
 :root {
   color-scheme: light dark;
 
-  /* --- Ink & signal: six chosen values, no pure black or white text --- */
-  --ink: #151c28; /* deep blue-black — primary text */
-  --paper: #f1f4f8; /* cool near-white — the page ground */
-  --vellum: #ffffff; /* the raised document surface */
-  --graphite: #59637a; /* secondary text */
-  --cobalt: #1b3fd1; /* the one accent: voice line, marks, links */
-  --flag: #b0304a; /* failure only, never decoration */
+  /* --- Ink & pine: six chosen values, no pure black or white --- */
+  --ink: #1a2332; /* the mark's near-black — primary text */
+  --paper: #f6f5f2; /* warm off-white page ground */
+  --surface: #fdfdfc; /* the document's own page */
+  --muted: #5c6672; /* secondary text, desaturated from the ink */
+  --accent: #14635c; /* deep pine — action, live, active, links */
+  --flag: #9e3b45; /* failure only, never decoration */
 
-  --rule: #d8dee8; /* hairlines */
-  --inset: #e7ecf3; /* recessed fields */
-  --cobalt-wash: #e6ebfb;
-  --flag-wash: #fbeaee;
-  --on-cobalt: #ffffff;
+  --rule: #e0dfda; /* hairlines */
+  --inset: #edece7; /* recessed fields */
+  --accent-soft: #e4efec;
+  --accent-strong: #0e4b45;
+  --flag-soft: #f7eaea;
+  --on-accent: #fdfdfc;
 
-  /* --- Type: two variable families, opposed roles --- */
+  /* --- Type: the tool, the document, and literal characters --- */
+  --font-ui: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
   --font-document: "Newsreader", Georgia, "Times New Roman", serif;
-  --font-instrument: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
-  /* The wordmark only: the logo's S was drawn from this face. */
-  --font-wordmark: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-code: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
 
-  /* Scale, ratio 1.25 */
+  /* Scale, ratio ~1.2 */
   --t-micro: 0.75rem; /* 12 */
   --t-small: 0.8125rem; /* 13 */
   --t-base: 0.9375rem; /* 15 */
   --t-body: 1.0625rem; /* 17 — document body */
-  --t-lift: 1.3125rem; /* 21 */
-  --t-loud: 1.6875rem; /* 27 */
+  --t-lift: 1.25rem; /* 20 */
+  --t-loud: 1.625rem; /* 26 */
   --t-shout: 2.125rem; /* 34 — wordmark */
 
   /* --- Space: 4px base --- */
@@ -51,6 +62,9 @@
   --s8: 32px;
   --s12: 48px;
   --s16: 64px;
+  --s24: 96px;
+
+  --radius: 10px;
 
   /* --- Motion: short, ease-out, never bouncy --- */
   --ease: cubic-bezier(0.2, 0, 0, 1);
@@ -60,18 +74,19 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --ink: #e7ebf3;
-    --paper: #0e131c;
-    --vellum: #161d29;
-    --graphite: #8d97ab;
-    --cobalt: #8ba4ff;
-    --flag: #ff6f8d;
+    --ink: #eceae5;
+    --paper: #12161d;
+    --surface: #191e26;
+    --muted: #9aa3ae;
+    --accent: #5fada4;
+    --flag: #e08691;
 
-    --rule: #262f41;
-    --inset: #111825;
-    --cobalt-wash: #1a2340;
-    --flag-wash: #2b1622;
-    --on-cobalt: #101728;
+    --rule: #2a3039;
+    --inset: #161b23;
+    --accent-soft: #17302e;
+    --accent-strong: #7cc3ba;
+    --flag-soft: #2c1a1d;
+    --on-accent: #0e1319;
   }
 }
 
@@ -81,17 +96,17 @@
 
 body {
   margin: 0;
+  overflow-x: clip;
   background: var(--paper);
   color: var(--ink);
-  font-family: var(--font-instrument);
+  font-family: var(--font-ui);
   font-size: var(--t-base);
-  font-variant-ligatures: none;
   -webkit-font-smoothing: antialiased;
 }
 
 /* One visible focus treatment, applied everywhere. */
 :where(a, button, input, textarea, [tabindex]):focus-visible {
-  outline: 2px solid var(--cobalt);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-radius: 2px;
 }
@@ -116,11 +131,123 @@ body {
   flex-wrap: wrap;
 }
 
+/* The key sits opposite the wordmark, top-aligned: on a first visit it is a
+   three-line field, and centring it would hang it below the tagline. */
+.masthead-aside {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s3);
+  margin-left: auto;
+  align-self: flex-start;
+}
+
+/*
+ * Whether the key is set is the one piece of state worth carrying in the
+ * chrome, so it is stated rather than hidden behind Settings.
+ */
+.key-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  margin: 0;
+  padding: var(--s2) var(--s3);
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  font-size: var(--t-small);
+  color: var(--muted);
+}
+
+.key-chip code {
+  font-family: var(--font-code);
+  font-size: var(--t-micro);
+  letter-spacing: 0.04em;
+}
+
+/* Quiet enough to ignore until you want it, which is almost never. */
+.key-forget {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--t-micro);
+  text-decoration: underline;
+  text-decoration-color: var(--rule);
+  text-underline-offset: 3px;
+  cursor: pointer;
+  transition: color var(--fast) var(--ease);
+}
+
+.key-forget:hover {
+  color: var(--flag);
+  text-decoration-color: currentColor;
+}
+
+.key-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+/*
+ * No key means the app cannot do its one job, so the field is present in the
+ * masthead rather than a step to go and find. It collapses to .key-chip the
+ * moment a key is saved and never comes back.
+ */
+.keybar {
+  display: grid;
+  gap: var(--s2);
+  width: min(340px, 100%);
+  padding: var(--s3) var(--s4);
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  background: var(--accent-soft);
+}
+
+.keybar-label {
+  font-size: var(--t-small);
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.keybar-row {
+  display: flex;
+  gap: var(--s2);
+}
+
+.keybar-input {
+  flex: 1;
+  min-width: 0;
+  padding: var(--s2) var(--s3);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-code);
+  font-size: var(--t-small);
+}
+
+.keybar-input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.keybar-input-bad {
+  border-color: var(--flag);
+}
+
+.keybar-note {
+  margin: 0;
+  font-size: var(--t-micro);
+  color: var(--muted);
+}
+
 .wordmark {
   display: flex;
   align-items: baseline;
   margin: 0;
-  font-family: var(--font-wordmark);
+  font-family: var(--font-ui);
   font-size: var(--t-shout);
   line-height: 1;
   letter-spacing: -0.02em;
@@ -183,7 +310,7 @@ body {
   width: 0.13em;
   height: 0.13em;
   border-radius: 50%;
-  background: var(--cobalt);
+  background: var(--accent);
   opacity: 0.85;
   animation: typing-rise 1.1s var(--ease) infinite;
 }
@@ -203,7 +330,7 @@ body {
   font-family: var(--font-document);
   font-size: var(--t-base);
   font-style: italic;
-  color: var(--graphite);
+  color: var(--muted);
 }
 
 /* Same strut as the wordmark, so an empty tagline still holds its line. */
@@ -215,124 +342,151 @@ body {
 /* Instrument bar — the voice line IS the recording indicator          */
 /* ------------------------------------------------------------------ */
 
-.instrument {
+/*
+ * One row: what you do, what is happening, how you are looking at it.
+ * Record anchors the left; the view controls sit at the far end.
+ */
+.action-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--s4) var(--s6);
+  flex-wrap: wrap;
+  padding-bottom: var(--s2);
+}
+
+.record-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: var(--s3) var(--s6);
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font: inherit;
+  font-size: var(--t-base);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--fast) var(--ease), border-color var(--fast) var(--ease);
+}
+
+.record-button:hover:not(:disabled) {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+}
+
+.record-button-live {
+  background: var(--flag);
+  border-color: var(--flag);
+}
+
+.record-button:disabled {
+  opacity: 0.55;
+  cursor: progress;
+}
+
+/* A dot to record, a square to stop. */
+.record-mark {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.record-mark-stop {
+  border-radius: 2px;
+  animation: record-pulse 1.6s var(--ease) infinite;
+}
+
+@keyframes record-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+/* The meter and its status take the space between the two ends. */
+.action-live {
   display: flex;
   align-items: center;
   gap: var(--s4);
-  flex-wrap: wrap;
-  padding-bottom: var(--s4);
-  border-bottom: 1px solid var(--rule);
-}
-
-/*
- * The button and its meter are one object. A full-width rail read as a page
- * divider and left the control hard to find.
- */
-.transport {
-  display: flex;
-  align-items: center;
-  gap: var(--s3);
+  flex: 1 1 260px;
+  min-width: 0;
 }
 
 .voice-well {
-  width: 168px;
-  flex: none;
+  flex: 0 1 200px;
+  min-width: 80px;
 }
 
 .voice-line {
   display: block;
   width: 100%;
-  height: 34px;
+  height: 36px;
 }
 
 .voice-line-tick {
-  stroke: var(--graphite);
+  stroke: var(--muted);
   stroke-width: 1;
-  opacity: 0.4;
+  opacity: 0.35;
   vector-effect: non-scaling-stroke;
 }
 
 .voice-line-live .voice-line-tick {
-  stroke: var(--cobalt);
+  stroke: var(--accent);
   opacity: 0.7;
 }
 
 .voice-line-rest {
-  stroke: var(--graphite);
+  stroke: var(--muted);
   stroke-width: 1;
-  opacity: 0.28;
+  opacity: 0.26;
   vector-effect: non-scaling-stroke;
 }
 
 .voice-line-trace {
   fill: none;
-  stroke: var(--graphite);
+  stroke: var(--muted);
   stroke-width: 1.25;
   stroke-linejoin: round;
   vector-effect: non-scaling-stroke;
-  opacity: 0.55;
+  opacity: 0.5;
   transition: stroke var(--calm) var(--ease), opacity var(--calm) var(--ease);
 }
 
 .voice-line-live .voice-line-trace {
-  stroke: var(--cobalt);
+  stroke: var(--accent);
   opacity: 1;
 }
 
-.speak-button {
-  padding: var(--s2) var(--s6);
-  border: 1px solid var(--ink);
-  border-radius: 2px;
-  background: transparent;
-  color: var(--ink);
-  font: inherit;
+.action-status {
   font-size: var(--t-small);
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  cursor: pointer;
-  transition: background var(--fast) var(--ease), border-color var(--fast) var(--ease);
+  color: var(--muted);
+  white-space: nowrap;
 }
 
-.speak-button:hover:not(:disabled) {
-  background: var(--cobalt);
-  border-color: var(--cobalt);
-  color: var(--on-cobalt);
-}
-
-.speak-button-live {
-  background: var(--cobalt);
-  border-color: var(--cobalt);
-  color: var(--on-cobalt);
-}
-
-.speak-button:disabled {
-  opacity: 0.5;
-  cursor: progress;
-}
-
-.instrument-status {
-  font-size: var(--t-micro);
-  color: var(--graphite);
-  font-variant-numeric: tabular-nums;
+.action-error {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: var(--t-small);
+  color: var(--flag);
+  max-width: 60ch;
 }
 
 .scopes {
   display: flex;
+  align-items: center;
   gap: var(--s2);
   flex-wrap: wrap;
-  font-size: var(--t-micro);
-  color: var(--graphite);
 }
 
-.scopes-none {
-  color: var(--graphite);
-  opacity: 0.55;
-}
-
-/* Open marks announce themselves by weight and colour, not by a chip border. */
+/* Open marks are the one readout that earns the accent. */
 .scope {
-  color: var(--cobalt);
-  font-weight: 600;
+  padding: 2px var(--s2);
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: var(--t-micro);
+  font-weight: 500;
   animation: scope-in var(--fast) var(--ease) both;
 }
 
@@ -341,14 +495,6 @@ body {
     opacity: 0;
     transform: translateY(-2px);
   }
-}
-
-.instrument-error {
-  flex-basis: 100%;
-  margin: 0;
-  font-size: var(--t-micro);
-  color: var(--flag);
-  max-width: 60ch;
 }
 
 /* ------------------------------------------------------------------ */
@@ -388,11 +534,12 @@ body {
 .panel-label {
   display: flex;
   align-items: center;
-  min-height: 30px;
+  /* Matches .document-head, which is as tall as the switch inside it. */
+  min-height: 40px;
   margin: 0 0 var(--s2);
-  font-size: var(--t-micro);
+  font-size: var(--t-small);
   font-weight: 500;
-  color: var(--graphite);
+  color: var(--muted);
 }
 
 /* The signal is recessed and flat — it is input, not output. */
@@ -406,8 +553,8 @@ body {
   border-left: 2px solid var(--rule);
   border-radius: 0;
   background: var(--inset);
-  color: var(--graphite);
-  font-family: var(--font-instrument);
+  color: var(--muted);
+  font-family: var(--font-code);
   font-size: var(--t-small);
   font-weight: 400;
   line-height: 1.85;
@@ -417,11 +564,11 @@ body {
 
 .transcript:focus {
   color: var(--ink);
-  border-left-color: var(--cobalt);
+  border-left-color: var(--accent);
 }
 
 .transcript-live {
-  border-left-color: var(--cobalt);
+  border-left-color: var(--accent);
   color: var(--ink);
 }
 
@@ -430,7 +577,7 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: var(--s4);
-  min-height: 30px;
+  min-height: 40px;
   margin-bottom: var(--s2);
 }
 
@@ -438,11 +585,13 @@ body {
   margin: 0;
 }
 
-/* Clear sits beside the view switch, both acting on what is shown here. */
+/* Show transcript, the view switch, Clear — all aimed at the page below. */
 .document-actions {
   display: flex;
   align-items: center;
-  gap: var(--s3);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--s3) var(--s4);
 }
 
 /* The one raised surface on screen. This is where the boldness is spent. */
@@ -450,7 +599,7 @@ body {
   flex: 1;
   min-height: 320px;
   padding: var(--s8) var(--s8) var(--s12);
-  background: var(--vellum);
+  background: var(--surface);
   border: 1px solid var(--rule);
   border-radius: 3px;
   box-shadow: 0 1px 2px rgb(21 28 40 / 4%), 0 12px 32px -20px rgb(21 28 40 / 24%);
@@ -538,16 +687,16 @@ body {
 }
 
 .page-rendered del {
-  color: var(--graphite);
+  color: var(--muted);
   text-decoration-thickness: 1px;
 }
 
 .page-rendered blockquote {
   margin: 0 0 var(--s4);
   padding-left: var(--s4);
-  border-left: 2px solid var(--cobalt);
+  border-left: 2px solid var(--accent);
   font-style: italic;
-  color: var(--graphite);
+  color: var(--muted);
 }
 
 .page-rendered blockquote p {
@@ -566,19 +715,19 @@ body {
 
 .page-rendered a {
   color: var(--ink);
-  text-decoration-color: var(--cobalt);
+  text-decoration-color: var(--accent);
   text-underline-offset: 3px;
   text-decoration-thickness: 1.5px;
   transition: color var(--fast) var(--ease);
 }
 
 .page-rendered a:hover {
-  color: var(--cobalt);
+  color: var(--accent);
 }
 
 /* Code keeps the instrument's voice even inside the document. */
 .page-rendered code {
-  font-family: var(--font-instrument);
+  font-family: var(--font-code);
   font-size: 0.84em;
   padding: 1px 5px;
   border-radius: 2px;
@@ -619,13 +768,13 @@ body {
 
 .page-rendered .task-item input {
   margin: 0;
-  accent-color: var(--cobalt);
+  accent-color: var(--accent);
 }
 
 /* Raw view: the same document in the instrument's voice. */
 .page-raw {
   margin: 0;
-  font-family: var(--font-instrument);
+  font-family: var(--font-code);
   font-size: var(--t-small);
   font-weight: 400;
   line-height: 1.85;
@@ -662,7 +811,7 @@ body {
   display: inline-flex;
   padding: 2px;
   border: 1px solid var(--rule);
-  border-radius: 2px;
+  border-radius: 8px;
   background: var(--paper);
 }
 
@@ -672,7 +821,8 @@ body {
   bottom: 2px;
   left: 2px;
   width: calc(50% - 2px);
-  background: var(--ink);
+  border-radius: 6px;
+  background: var(--accent);
   transition: transform var(--calm) var(--ease);
 }
 
@@ -682,20 +832,20 @@ body {
 
 .switch-option {
   position: relative;
-  padding: var(--s1) var(--s3);
-  min-width: 72px;
+  padding: var(--s2) var(--s4);
+  min-width: 76px;
   border: 0;
   background: transparent;
-  color: var(--graphite);
+  color: var(--muted);
   font: inherit;
-  font-size: var(--t-micro);
+  font-size: var(--t-small);
   cursor: pointer;
   transition: color var(--fast) var(--ease);
 }
 
 .switch-option[aria-pressed="true"] {
-  color: var(--paper);
-  font-weight: 600;
+  color: var(--on-accent);
+  font-weight: 500;
 }
 
 /* ------------------------------------------------------------------ */
@@ -721,7 +871,7 @@ body {
   font-family: var(--font-document);
   font-size: var(--t-base);
   line-height: 1.6;
-  color: var(--graphite);
+  color: var(--muted);
 }
 
 .empty-moves {
@@ -731,7 +881,7 @@ body {
   display: grid;
   gap: var(--s2);
   font-size: var(--t-small);
-  color: var(--graphite);
+  color: var(--muted);
 }
 
 .empty-moves li {
@@ -751,7 +901,7 @@ body {
   flex-wrap: wrap;
   padding: var(--s3) var(--s4);
   border-left: 2px solid var(--flag);
-  background: var(--flag-wash);
+  background: var(--flag-soft);
   font-size: var(--t-small);
 }
 
@@ -761,98 +911,14 @@ body {
 }
 
 .notice-action {
-  padding: var(--s1) var(--s3);
+  padding: var(--s2) var(--s4);
   border: 1px solid var(--flag);
-  border-radius: 2px;
+  border-radius: 8px;
   background: transparent;
   color: var(--flag);
   font: inherit;
-  font-size: var(--t-micro);
+  font-size: var(--t-small);
   cursor: pointer;
-}
-
-/* ------------------------------------------------------------------ */
-/* Settings row                                                        */
-/* ------------------------------------------------------------------ */
-
-.chrome-row {
-  display: flex;
-  align-items: baseline;
-  gap: var(--s4);
-  flex-wrap: wrap;
-  margin-top: calc(var(--s8) * -1 + var(--s2));
-  font-size: var(--t-micro);
-}
-
-.settings {
-  display: flex;
-  align-items: baseline;
-  gap: var(--s6);
-  flex-wrap: wrap;
-}
-
-.toggle,
-.field {
-  display: inline-flex;
-  align-items: baseline;
-  gap: var(--s2);
-  color: var(--graphite);
-  cursor: pointer;
-}
-
-.toggle input {
-  accent-color: var(--cobalt);
-  cursor: pointer;
-}
-
-.field-label {
-  color: var(--graphite);
-}
-
-.field-input {
-  width: 108px;
-  padding: 2px var(--s2);
-  border: 0;
-  border-bottom: 1px solid var(--rule);
-  background: transparent;
-  color: var(--ink);
-  font: inherit;
-  font-size: var(--t-micro);
-  transition: border-color var(--fast) var(--ease);
-}
-
-.field-input:focus {
-  border-bottom-color: var(--cobalt);
-}
-
-.field-input-bad {
-  border-bottom-color: var(--flag);
-}
-
-.field-error {
-  color: var(--flag);
-}
-
-.ghost-button {
-  padding: var(--s1) var(--s3);
-  border: 1px solid var(--rule);
-  border-radius: 2px;
-  background: transparent;
-  color: var(--graphite);
-  font: inherit;
-  font-size: var(--t-micro);
-  cursor: pointer;
-  transition: border-color var(--fast) var(--ease), color var(--fast) var(--ease);
-}
-
-.ghost-button:hover:not(:disabled) {
-  border-color: var(--ink);
-  color: var(--ink);
-}
-
-.ghost-button:disabled {
-  opacity: 0.4;
-  cursor: default;
 }
 
 /* ------------------------------------------------------------------ */
@@ -878,7 +944,7 @@ body {
   font-family: var(--font-document);
   font-size: var(--t-base);
   line-height: 1.6;
-  color: var(--graphite);
+  color: var(--muted);
 }
 
 .help-group {
@@ -891,7 +957,53 @@ body {
   border-bottom: 1px solid var(--rule);
   font-size: var(--t-micro);
   font-weight: 600;
-  color: var(--graphite);
+  color: var(--muted);
+}
+
+/*
+ * The vocabulary's one editable part. Indented under the Editing heading so it
+ * reads as part of that group rather than a control bolted onto the page.
+ */
+.help-setting {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--s2) var(--s3);
+  margin-bottom: var(--s4);
+}
+
+.help-setting-label {
+  font-size: var(--t-small);
+  color: var(--ink);
+}
+
+.help-setting-input {
+  width: 12ch;
+  padding: var(--s1) var(--s2);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-code);
+  font-size: var(--t-small);
+}
+
+.help-setting-input:focus {
+  border-color: var(--accent);
+}
+
+.help-setting-input-bad {
+  border-color: var(--flag);
+}
+
+.help-setting-note {
+  margin: 0;
+  font-size: var(--t-micro);
+  color: var(--muted);
+}
+
+.help-setting-note-bad {
+  color: var(--flag);
 }
 
 .help-list {
@@ -919,11 +1031,11 @@ body {
   font-family: var(--font-document);
   font-size: var(--t-base);
   line-height: 1.5;
-  color: var(--graphite);
+  color: var(--muted);
 }
 
 code {
-  font-family: var(--font-instrument);
+  font-family: var(--font-code);
 }
 
 .help-intro code {
@@ -966,6 +1078,17 @@ code {
     gap: var(--s1);
   }
 
+  /* Wrapped under the wordmark, the corner group is the whole row, so the key
+     field spreads into it rather than hugging the right edge. */
+  .masthead-aside {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .keybar {
+    flex: 1;
+    width: auto;
+  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -982,55 +1105,40 @@ code {
   }
 }
 
-/* ------------------------------------------------------------------ */
-/* Bring-your-own key                                                  */
-/* ------------------------------------------------------------------ */
-
-.apikey {
-  display: inline-flex;
-  align-items: baseline;
-  gap: var(--s2);
-  flex-wrap: wrap;
-}
-
-.apikey-mask {
-  color: var(--ink);
-  letter-spacing: 0.04em;
-}
-
-.field-input-wide {
-  width: 216px;
-}
-
-.field-note {
-  color: var(--graphite);
-  opacity: 0.8;
-}
-
-/* Quiet inline actions. They read as text, not as more buttons in a row that
-   already has one. */
+/* Quiet inline actions: they read as text, not as more buttons. */
 .link-button,
 .field-link {
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--cobalt);
+  color: var(--accent);
   font: inherit;
-  font-size: var(--t-micro);
-  text-decoration-color: color-mix(in srgb, var(--cobalt) 40%, transparent);
+  font-size: var(--t-small);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--accent) 35%, transparent);
   text-underline-offset: 3px;
   cursor: pointer;
 }
 
-.link-button {
-  text-decoration: underline;
+.link-button:hover,
+.field-link:hover {
+  text-decoration-color: currentColor;
 }
 
 .link-button:disabled {
-  color: var(--graphite);
+  color: var(--muted);
   opacity: 0.5;
   cursor: default;
   text-decoration: none;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 /* ------------------------------------------------------------------ */
@@ -1054,7 +1162,7 @@ code {
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: var(--cobalt);
+  background: var(--accent);
   opacity: 0.85;
   animation: typing-rise 1.1s var(--ease) infinite;
 }
@@ -1085,15 +1193,30 @@ code {
 /* ------------------------------------------------------------------ */
 
 .footer {
+  position: relative;
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: var(--s4);
   flex-wrap: wrap;
   padding-top: var(--s6);
-  border-top: 1px solid var(--rule);
   font-size: var(--t-micro);
-  color: var(--graphite);
+  color: var(--muted);
+}
+
+/*
+ * Full-bleed, so the end of the page does not read as one more section break.
+ * The overflow it would cause next to a scrollbar is clipped on the body, which
+ * — unlike overflow: hidden — creates no scroll container.
+ */
+.footer::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 100vw;
+  transform: translateX(-50%);
+  border-top: 1px solid var(--rule);
 }
 
 .footer-links {
@@ -1102,11 +1225,75 @@ code {
 }
 
 .footer-links a {
-  color: var(--cobalt);
-  text-decoration-color: color-mix(in srgb, var(--cobalt) 40%, transparent);
+  color: var(--accent);
+  text-decoration-color: color-mix(in srgb, var(--accent) 40%, transparent);
   text-underline-offset: 3px;
 }
 
 .footer-links a:hover {
   text-decoration-color: currentColor;
+}
+
+/* ------------------------------------------------------------------ */
+/* Buttons and small controls                                          */
+/* ------------------------------------------------------------------ */
+
+.primary-button {
+  padding: var(--s2) var(--s4);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font: inherit;
+  font-size: var(--t-small);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--fast) var(--ease), border-color var(--fast) var(--ease);
+}
+
+.primary-button:hover:not(:disabled) {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+}
+
+.primary-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.ghost-button {
+  padding: var(--s2) var(--s4);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--t-small);
+  cursor: pointer;
+  transition: border-color var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+
+.ghost-button:hover:not(:disabled) {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.ghost-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* A view option about the document panel, so it sits on that panel's header. */
+.quiet-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  font-size: var(--t-small);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.quiet-toggle input {
+  accent-color: var(--accent);
+  cursor: pointer;
 }

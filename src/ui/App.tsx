@@ -13,11 +13,11 @@ import type { ParserConfig } from "../parser/commands.js";
 import { DEFAULT_CONFIG, validateConfigWord } from "../parser/commands.js";
 import { parse } from "../parser/parse.js";
 import { CommandHelp } from "./CommandHelp.js";
-import type { OutputView } from "./Editor.js";
+import type { OutputView } from "./ViewSwitch.js";
 import { Editor } from "./Editor.js";
 import { Footer } from "./Footer.js";
-import { Recorder } from "./Recorder.js";
-import { Settings } from "./Settings.js";
+import { ActionBar } from "./ActionBar.js";
+import { ApiKeyControl } from "./ApiKeyControl.js";
 import { Masthead } from "./Masthead.js";
 import { useApiKey } from "./useApiKey.js";
 import { useClipboardLinks } from "./useClipboardLinks.js";
@@ -142,28 +142,18 @@ export function App() {
 
   return (
     <div className="app">
-      <Masthead />
+      <Masthead>
+        <ApiKeyControl apiKey={apiKey} onApiKeyChange={setApiKey} />
+      </Masthead>
 
-      <Recorder
+      <ActionBar
         status={live.status}
         error={live.error}
         stopReason={live.stopReason}
         amplitude={live.amplitude}
         state={parseResult.state}
-        onToggle={handleToggleRecording}
+        onToggleRecording={handleToggleRecording}
       />
-
-      <div className="chrome-row">
-        <Settings
-          apiKey={apiKey}
-          onApiKeyChange={setApiKey}
-          escapeInput={escapeInput}
-          escapeError={escapeError}
-          onEscapeInputChange={handleEscapeInputChange}
-          transcriptOpen={transcriptOpen}
-          onTranscriptOpenChange={setTranscriptOpen}
-        />
-      </div>
 
       <Editor
         transcript={transcript}
@@ -175,6 +165,7 @@ export function App() {
         escapeWord={config.escapeWord}
         readOnly={live.isActive}
         transcriptOpen={transcriptOpen}
+        onTranscriptOpenChange={setTranscriptOpen}
         speaking={speaking}
         onClear={handleClearTranscript}
         canClear={!live.isActive && transcript.length > 0}
@@ -195,7 +186,12 @@ export function App() {
         </div>
       )}
 
-      <CommandHelp config={config} />
+      <CommandHelp
+        config={config}
+        escapeInput={escapeInput}
+        escapeError={escapeError}
+        onEscapeInputChange={handleEscapeInputChange}
+      />
 
       <Footer />
     </div>
